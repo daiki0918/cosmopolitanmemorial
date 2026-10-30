@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title description">
+  <title id="title">Floral tributes illustration</title>
+  <desc id="description">A gentle arrangement of white and blush flowers with green leaves.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f1ece2"/><stop offset="1" stop-color="#d9e6de"/></linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#background)"/>
+  <circle cx="320" cy="164" r="130" fill="#fff" opacity=".35"/>
+  <path d="M0 290c112-24 232 1 338 1s193-23 302 1v68H0Z" fill="#c5b194"/>
+  <path d="M292 173c-51 18-68 64-93 105m102-105c-13 46-8 76-5 107m20-108c29 33 46 64 58 105m-49-91c42-28 66-20 78 16m-112-21c-38-34-68-27-80 4m52 36c-35-9-62 7-68 34m139-27c42-5 62 15 62 42" fill="none" stroke="#67816d" stroke-width="7" stroke-linecap="round"/>
+  <path d="M243 278h150l-18 54h-114Z" fill="#a96f58"/>
+  <path d="M236 278h164l-13 18H249Z" fill="#d1a283"/>
+  <g fill="#fff3df">
+    <circle cx="235" cy="162" r="19"/><circle cx="222" cy="148" r="15"/><circle cx="242" cy="141" r="16"/><circle cx="253" cy="158" r="15"/><circle cx="239" cy="178" r="15"/>
+    <circle cx="320" cy="126" r="21"/><circle cx="302" cy="110" r="16"/><circle cx="324" cy="101" r="17"/><circle cx="341" cy="114" r="16"/><circle cx="337" cy="137" r="16"/>
+    <circle cx="403" cy="169" r="18"/><circle cx="389" cy="155" r="14"/><circle cx="408" cy="148" r="15"/><circle cx="421" cy="164" r="14"/><circle cx="405" cy="183" r="14"/>
+    <circle cx="287" cy="194" r="17"/><circle cx="273" cy="180" r="13"/><circle cx="291" cy="173" r="14"/><circle cx="304" cy="190" r="13"/><circle cx="289" cy="207" r="13"/>
+  </g>
+  <g fill="#c28b76"><circle cx="239" cy="160" r="7"/><circle cx="322" cy="121" r="8"/><circle cx="406" cy="166" r="7"/><circle cx="289" cy="191" r="7"/></g>
+</svg>

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title description">
+  <title id="title">Family guidance illustration</title>
+  <desc id="description">A warm illustration of a family sitting together with a support person.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8eee0"/><stop offset="1" stop-color="#d9e8df"/></linearGradient>
+    <linearGradient id="window" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e5f1eb"/><stop offset="1" stop-color="#b6d2c3"/></linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#bg)"/>
+  <circle cx="528" cy="68" r="95" fill="#fff" opacity=".34"/>
+  <rect x="388" y="46" width="172" height="142" rx="70" fill="url(#window)"/>
+  <path d="M473 47v140M389 117h171" stroke="#fff" stroke-width="8" opacity=".72"/>
+  <path d="M0 278c117-27 192 22 302 4s228-22 338 2v76H0Z" fill="#d2b999"/>
+  <rect x="124" y="223" width="376" height="78" rx="32" fill="#8d6157"/>
+  <rect x="148" y="205" width="328" height="86" rx="35" fill="#f3e6d5"/>
+  <path d="M144 269h337v45H144z" fill="#b57f69"/>
+  <circle cx="226" cy="158" r="32" fill="#bb8065"/>
+  <path d="M194 158c0-45 63-53 68-4-20-10-37-22-48-36-2 17-8 30-20 40Z" fill="#47362f"/>
+  <path d="M181 219c4-35 22-48 45-48s42 13 47 48v30H181Z" fill="#466a6a"/>
+  <circle cx="323" cy="148" r="31" fill="#e2b08c"/>
+  <path d="M292 150c-2-42 56-55 67-8-19-3-39-15-52-28-1 14-6 26-15 36Z" fill="#665046"/>
+  <path d="M282 217c5-38 21-53 42-53 25 0 40 17 45 53l2 28H280Z" fill="#c38f68"/>
+  <circle cx="421" cy="158" r="29" fill="#d5a07c"/>
+  <path d="M392 158c1-39 49-49 61-9-18-4-34-13-46-27-1 15-6 26-15 36Z" fill="#5a4438"/>
+  <path d="M382 218c3-34 20-49 40-49s38 15 42 49v27h-84Z" fill="#698477"/>
+  <path d="M228 247c39 15 77 17 112 1m-20 0c30 17 62 17 93 1" fill="none" stroke="#79564d" stroke-width="5" stroke-linecap="round"/>
+</svg>

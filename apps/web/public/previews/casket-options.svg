@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title description">
+  <title id="title">Casket options illustration</title>
+  <desc id="description">A respectful, stylized illustration representing casket choices.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eee8dd"/><stop offset="1" stop-color="#cfded5"/></linearGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#b7845c"/><stop offset="1" stop-color="#78513d"/></linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#background)"/>
+  <circle cx="320" cy="163" r="121" fill="#fff" opacity=".36"/>
+  <path d="M0 279c137-24 204 15 333 1s210-23 307 0v80H0Z" fill="#c5b194"/>
+  <path d="M222 144h196l38 57-43 75H227l-43-75Z" fill="url(#wood)" stroke="#654532" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M222 144c27-42 168-42 196 0l38 57H184Z" fill="#c29267" stroke="#654532" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M225 155c31-31 157-31 190 0" fill="none" stroke="#dfbd91" stroke-width="7" stroke-linecap="round"/>
+  <path d="M192 202h272m-224 0 12 73m146-73-13 73" fill="none" stroke="#d7b68a" stroke-width="5"/>
+  <path d="M307 206c-10-12-28-2-17 11l30 29 30-29c11-13-7-23-17-11l-13 13Z" fill="#e3c18d" opacity=".95"/>
+  <path d="M110 100c26-18 52-18 78 0m-78 16c26-18 52-18 78 0" fill="none" stroke="#fff" stroke-width="4" opacity=".55" stroke-linecap="round"/>
+  <path d="M455 91c26-18 52-18 78 0m-78 16c26-18 52-18 78 0" fill="none" stroke="#fff" stroke-width="4" opacity=".55" stroke-linecap="round"/>
+</svg>

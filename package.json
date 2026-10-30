@@ -1,0 +1,17 @@
+{
+  "name": "cosmopolitan-funeral-homes",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "npm run dev -w apps/api",
+    "dev:web": "npm run dev -w apps/web",
+    "build": "npm run build -w apps/api && npm run build -w apps/web",
+    "seed": "npm run seed -w apps/api",
+    "dev": "concurrently -n api,web \"npm:dev:api\" \"npm:dev:web\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

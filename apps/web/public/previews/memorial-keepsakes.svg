@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title description">
+  <title id="title">Memorial keepsakes illustration</title>
+  <desc id="description">A keepsake box with a small flower and a framed remembrance card.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e8eee8"/><stop offset="1" stop-color="#f3e4d2"/></linearGradient>
+    <linearGradient id="box" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c99d78"/><stop offset="1" stop-color="#93664e"/></linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#background)"/>
+  <circle cx="327" cy="168" r="130" fill="#fff" opacity=".37"/>
+  <path d="M0 284c126-24 222 15 337 1s195-22 303 0v75H0Z" fill="#bba389"/>
+  <rect x="198" y="92" width="154" height="174" rx="12" fill="#fffdf7" stroke="#ad8969" stroke-width="7"/>
+  <rect x="216" y="110" width="118" height="130" rx="5" fill="#dce8df"/>
+  <path d="M230 220c26-42 73-43 99 0" fill="#82978a"/>
+  <circle cx="275" cy="161" r="22" fill="#d5a27e"/>
+  <path d="M250 162c0-34 49-41 53-4-16-5-31-14-39-25-1 12-6 22-14 29Z" fill="#534137"/>
+  <path d="M248 214c3-27 13-38 28-38s27 12 29 38Z" fill="#637e71"/>
+  <rect x="365" y="173" width="154" height="102" rx="12" fill="url(#box)" stroke="#77533f" stroke-width="6"/>
+  <path d="M354 170c18-29 160-29 177 0v22H354Z" fill="#d4ad87" stroke="#77533f" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M441 196c-8-10-22-2-14 9l18 18 18-18c8-11-6-19-14-9l-4 4Z" fill="#f1dfbf"/>
+  <path d="M418 74c11-19 31-20 42-2m-21-19v37" fill="none" stroke="#728b77" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="439" cy="55" r="9" fill="#c68e79"/>
+</svg>

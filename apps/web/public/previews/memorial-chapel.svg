@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title description">
+  <title id="title">Memorial chapel illustration</title>
+  <desc id="description">A quiet chapel interior with a softly lit arched window and flowers.</desc>
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#e9e1d5"/><stop offset="1" stop-color="#d2c4b1"/></linearGradient>
+    <linearGradient id="light" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8edcf"/><stop offset="1" stop-color="#d8e7df"/></linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#wall)"/>
+  <path d="M0 283h640v77H0Z" fill="#927c68"/>
+  <path d="M118 228V114c0-68 46-97 102-97s102 29 102 97v114Z" fill="#b69d7f"/>
+  <path d="M137 218V117c0-54 34-80 83-80s83 26 83 80v101Z" fill="url(#light)"/>
+  <path d="M220 38v179m-82-87h164" stroke="#fff" stroke-width="8" opacity=".76"/>
+  <path d="M0 272c129-31 228-18 322 1s193 28 318-3v20c-124 35-221 24-320 4S126 269 0 293Z" fill="#b8a185" opacity=".7"/>
+  <rect x="394" y="196" width="166" height="15" rx="7" fill="#755346"/>
+  <path d="M420 211h12l9 76h-30Zm103 0h12l10 76h-31Z" fill="#755346"/>
+  <rect x="430" y="165" width="10" height="31" rx="5" fill="#b78357"/>
+  <path d="M435 151c15 12 13 21 0 23-13-2-15-11 0-23Z" fill="#f3d9a2"/>
+  <path d="M72 282c15-46 37-54 55 0m-33-8c-22-29-9-42 10-19m8 16c24-30 37-17 13 8" fill="none" stroke="#627d68" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="106" cy="255" r="7" fill="#bd856e"/><circle cx="124" cy="266" r="6" fill="#dfb68a"/>
+  <circle cx="81" cy="269" r="6" fill="#dfb68a"/><path d="M77 286h59" stroke="#8c624e" stroke-width="5" stroke-linecap="round"/>
+</svg>
