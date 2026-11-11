@@ -16,22 +16,36 @@ const bodies = {
   faqs: z.object({ question: z.string().min(5).max(300), answer: z.string().min(2).max(4000), category: z.enum(["general", "services", "packages", "payments", "branches"]).optional(), published: z.boolean().optional() }),
 };
 const models: Record<keyof typeof bodies, Model<any>> = { services: Service, products: Product, faqs: Faq };
+const page = (q: { page?: unknown; limit?: unknown }) => ({
+  p: Math.max(1, Number(q.page) || 1),
+  n: Math.min(100, Math.max(1, Number(q.limit) || 20)),
+});
 
 export const adminContent = Router();
 export const publicContent = Router();
 for (const name of Object.keys(bodies) as (keyof typeof bodies)[]) {
   const M = models[name], body = bodies[name];
-  adminContent.get(`/${name}`, requireAuth, can("content:write"), async (_q, res) => void res.json(await M.find({ archived: false }).sort("-createdAt").limit(200)));
+  adminContent.get(`/${name}`, requireAuth, can("content:write"), async (req, res) => {
+    const { p, n } = page(req.query);
+    const filter = { archived: false };
+    const [items, total] = await Promise.all([
+      M.find(filter).sort("-createdAt").skip((p - 1) * n).limit(n),
+      M.countDocuments(filter),
+    ]);
+    res.json({ items, total, page: p });
+  });
   adminContent.post(`/${name}`, requireAuth, can("content:write"), async (req, res) => {
-    const d = await M.create(body.parse(req.body)); await audit_(req.user!.id, `${name}.create`, d.id); res.status(201).json(d);
+    const d = await M.create(body.parse(req.body)); await audit_(req.user!.id, `${name}.create`, d.id, { title: d.title ?? d.question }); res.status(201).json(d);
   });
   adminContent.patch(`/${name}/:id`, requireAuth, can("content:write"), async (req, res) => {
     const d = await M.findByIdAndUpdate(req.params.id, body.partial().parse(req.body), { new: true });
     if (!d) return void res.status(404).json({ error: "Not found" });
-    await audit_(req.user!.id, `${name}.update`, d.id); res.json(d);
+    await audit_(req.user!.id, `${name}.update`, d.id, { title: d.title ?? d.question }); res.json(d);
   });
   adminContent.delete(`/${name}/:id`, requireAuth, can("content:write"), async (req, res) => { // archive, never hard-delete
-    await M.findByIdAndUpdate(req.params.id, { archived: true, published: false }); await audit_(req.user!.id, `${name}.archive`, req.params.id); res.status(204).end();
+    const d = await M.findByIdAndUpdate(req.params.id, { archived: true, published: false });
+    if (!d) return void res.status(404).json({ error: "Not found" });
+    await audit_(req.user!.id, `${name}.archive`, d.id, { title: d.title ?? d.question }); res.status(204).end();
   });
   publicContent.get(`/${name}`, async (_q, res) => void res.json(await M.find({ published: true, archived: false }).sort("-createdAt").limit(200)));
 }

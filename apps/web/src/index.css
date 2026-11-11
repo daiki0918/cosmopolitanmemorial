@@ -1,118 +1,672 @@
 @import "tailwindcss";
-@theme {
+@theme static {
+  /* Original tokens (unchanged) */
   --color-brand:#2339ff; --color-navy:#0b1450; --color-ivory:#f5f7ff; --color-gold:#2339ff; --color-ink:#1b2033;
   --font-display:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --font-heading:"Playfair Display",Georgia,serif;
+
+  /* Brand scale: use bg-brand-50, text-brand-700, border-brand-200 and so on */
+  --color-brand-50:#eef1ff; --color-brand-100:#e0e5ff; --color-brand-200:#c5cdff; --color-brand-300:#9aa8ff;
+  --color-brand-400:#6b7fff; --color-brand-500:#4559ff; --color-brand-600:#2339ff; --color-brand-700:#1b2cd1; --color-brand-800:#1a28a0;
+
+  /* Warm counterpoint taken from the hero (it was hard-coded there before) */
+  --color-sand:#d6bd8b; --color-sand-light:#e9dcc0; --color-gold-deep:#c59b00;
+
+  /* Tinted neutrals instead of pure grey */
+  --color-navy-900:#070e33; --color-line:#dde2f5; --color-muted:#5b6385;
 }
-html{scroll-behavior:smooth}
-body{background:var(--color-ivory);color:var(--color-ink);font-family:var(--font-display);-webkit-font-smoothing:antialiased}
-h1,h2,h3{letter-spacing:-.02em}
-:focus-visible{outline:3px solid var(--color-brand);outline-offset:2px}
-.reveal{animation:up .7s cubic-bezier(.2,.7,.2,1) both}
-.d1{animation-delay:.12s}.d2{animation-delay:.24s}
-@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+/* ==========================================================
+   MOTION LANGUAGE
+   Calm, weighted, and purposeful:
+   - Entrances decelerate (ease-out), exits are quicker.
+   - One orchestrated moment per page (the hero); the rest of the page
+     responds to scrolling or to the person's own actions.
+   - Typed custom properties (@property) let gradients and numbers animate.
+   ========================================================== */
+@property --hero-angle{syntax:"<angle>";inherits:false;initial-value:115deg}
+@property --branch-angle{syntax:"<angle>";inherits:false;initial-value:118deg}
+@property --n{syntax:"<integer>";inherits:false;initial-value:0}
+
+:root{
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --ease-in-out:cubic-bezier(.65,0,.35,1);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --ease-snap:cubic-bezier(.2,.8,.2,1);
+  --dur-fast:.18s;
+  --dur-base:.35s;
+  --dur-slow:.9s;
+  /* Shadows are tinted navy and layered (tight contact shadow + soft ambient + faint brand glow) */
+  --shadow-card:0 1px 2px rgba(11,20,80,.05),0 8px 24px -10px rgba(11,20,80,.12),0 28px 48px -32px rgba(11,20,80,.14);
+  --shadow-lift:0 2px 4px rgba(11,20,80,.06),0 20px 38px -14px rgba(11,20,80,.22),0 44px 72px -36px rgba(35,57,255,.30);
+  --radius-card:1.25rem;
+  --radius-field:.75rem;
+  interpolate-size:allow-keywords;
+}
+
+@layer base{
+  html{scroll-behavior:smooth;scroll-padding-top:5rem;scrollbar-width:thin;scrollbar-color:var(--color-brand-300) transparent}
+  body{
+    background-color:var(--color-ivory);
+    /* A faint blue wash top right and a warm one on the left give the ivory some depth */
+    background-image:radial-gradient(60rem 32rem at 92% -8%,rgba(35,57,255,.07),transparent 65%),radial-gradient(46rem 28rem at -12% 32%,rgba(214,189,139,.11),transparent 60%);
+    background-repeat:no-repeat;
+    color:var(--color-ink);font-family:var(--font-display);font-size:1.0625rem;line-height:1.65;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-optical-sizing:auto;
+  }
+  /* Serif headlines, sans body. Set --heading-family:var(--font-display) on :root to switch back to sans. */
+  h1,h2,h3,h4{text-wrap:balance;line-height:1.12}
+  h1,h2{font-family:var(--heading-family,var(--font-heading));font-weight:600;letter-spacing:-.025em}
+  h3,h4{font-weight:650;letter-spacing:-.015em}
+  p,li{text-wrap:pretty}
+  a{text-underline-offset:.22em;text-decoration-thickness:1px}
+  ::selection{background:rgba(35,57,255,.18)}
+  input,textarea,select{accent-color:var(--color-brand);caret-color:var(--color-brand)}
+  input:not([type=checkbox]):not([type=radio]):not([type=hidden]),textarea,select{border-color:var(--color-line);border-radius:var(--radius-field);background-color:#fff}
+  ::placeholder{color:#8a92b3;opacity:1}
+}
+.admin-dark :is(h1,h2,h3,h4){font-family:var(--font-display)}
+
+:focus-visible{outline:3px solid var(--color-brand);outline-offset:2px;animation:focus-in var(--dur-fast) var(--ease-out)}
+@keyframes focus-in{from{outline-offset:7px;outline-color:transparent}}
+
+/* Cross-fade between pages where supported */
+@view-transition{navigation:auto}
+::view-transition-old(root){animation:vt-out .2s var(--ease-in-out) both}
+::view-transition-new(root){animation:vt-in .45s var(--ease-out) both}
+@keyframes vt-out{to{opacity:0;filter:blur(3px)}}
+@keyframes vt-in{from{opacity:0;translate:0 10px}}
+
+/* ==========================================================
+   KEYFRAMES
+   "from"-only keyframes settle on the element's own CSS, so they never
+   fight responsive rules. Positional effects use translate/scale/rotate
+   properties so they can coexist with transform-based rules.
+   ========================================================== */
+@keyframes up{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes hero-in{from{opacity:0;translate:0 26px;filter:blur(8px)}}
+@keyframes headline-in{from{opacity:0;translate:0 .35em;clip-path:inset(0 0 100% 0);filter:blur(10px)}}
+@keyframes building-in{from{opacity:0;translate:6% 0;scale:1.06;filter:blur(10px)}}
+@keyframes line-grow{from{transform:scaleX(0)}}
+@keyframes pin-drop{from{opacity:0;translate:0 -26px}}
+@keyframes branch-enter{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes map-enter{from{opacity:0;filter:blur(8px);scale:.98}to{opacity:1;filter:blur(0);scale:1}}
+
 @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-@keyframes motion-float{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(-12px,16px,0) scale(1.08)}}
-@keyframes shimmer{to{background-position:-200% 0}}
-@keyframes branch-enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes motion-float{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(-14px,18px,0) scale(1.08)}}
 @keyframes branch-glow{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(-18px,14px,0) scale(1.1)}}
-@keyframes pin-pulse{0%{opacity:.55;transform:scale(.75)}100%{opacity:0;transform:scale(2.2)}}
-@keyframes map-enter{from{opacity:0;filter:blur(5px)}to{opacity:1;filter:blur(0)}}
-.float{animation:drift 6s ease-in-out infinite}
-.motion-orb{position:absolute;width:18rem;height:18rem;border-radius:9999px;background:radial-gradient(circle,rgba(111,132,255,.3),rgba(111,132,255,0) 68%);pointer-events:none;animation:motion-float 9s ease-in-out infinite}
-.home-hero{min-height:42rem;background:linear-gradient(115deg,#07112d 0%,#0b1744 54%,#142a69 100%)}
-.home-hero::before{position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,#08112d 0%,rgba(8,17,45,.98) 26%,rgba(8,17,45,.84) 43%,rgba(8,17,45,.35) 70%,rgba(8,17,45,.08) 100%),linear-gradient(0deg,rgba(5,11,29,.28),transparent 25%);content:"";pointer-events:none}
-.home-hero-glow{position:absolute;z-index:0;width:28rem;height:28rem;border-radius:50%;filter:blur(84px);pointer-events:none}
+@keyframes pin-pulse{0%{opacity:.55;transform:scale(.75)}100%{opacity:0;transform:scale(2.4)}}
+@keyframes heroSkyDrift{from{transform:scale(1.07) translate3d(-.65%,0,0)}to{transform:scale(1.07) translate3d(.65%,0,0)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes sheen{from{transform:translateX(-120%) skewX(-18deg)}to{transform:translateX(260%) skewX(-18deg)}}
+@keyframes shake{20%{translate:-5px 0}40%{translate:5px 0}60%{translate:-3px 0}80%{translate:2px 0}}
+
+/* Slow breathing gradient behind the heroes (animates a typed angle) */
+@keyframes hero-angle{to{--hero-angle:130deg}}
+@keyframes branch-angle{to{--branch-angle:132deg}}
+
+/* Scroll-linked keyframes */
+@keyframes sl-up{from{opacity:0;translate:0 48px}to{opacity:1;translate:0 0}}
+@keyframes sl-left{from{opacity:0;translate:-56px 0}to{opacity:1;translate:0 0}}
+@keyframes sl-right{from{opacity:0;translate:56px 0}to{opacity:1;translate:0 0}}
+@keyframes sl-scale{from{opacity:0;scale:.92;filter:blur(6px)}to{opacity:1;scale:1;filter:blur(0)}}
+@keyframes sl-wipe{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes sl-img-settle{from{scale:1.25}to{scale:1}}
+@keyframes sl-parallax-a{from{translate:0 -60px}to{translate:0 120px}}
+@keyframes sl-parallax-b{from{translate:0 60px}to{translate:0 -120px}}
+@keyframes progress-grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes header-shrink{to{background-color:rgba(245,247,255,.82);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:0 10px 30px -16px rgba(11,20,80,.3)}}
+@keyframes count-up{from{--n:0}to{--n:var(--to,100)}}
+@keyframes marquee{to{transform:translateX(calc(-50% - var(--gap,2rem) / 2))}}
+
+/* ==========================================================
+   REVEAL UTILITIES
+   ========================================================== */
+.reveal{animation:up var(--dur-slow) var(--ease-out) both}
+.d1{animation-delay:.12s}.d2{animation-delay:.24s}.d3{animation-delay:.36s}.d4{animation-delay:.48s}
+
+/* .stagger on a parent: children rise in one after another */
+.stagger>*{animation:up .75s var(--ease-out) both;animation-delay:calc(var(--i,0) * 90ms)}
+.stagger>:nth-child(1){--i:0}.stagger>:nth-child(2){--i:1}.stagger>:nth-child(3){--i:2}
+.stagger>:nth-child(4){--i:3}.stagger>:nth-child(5){--i:4}.stagger>:nth-child(6){--i:5}
+.stagger>:nth-child(n+7){--i:6}
+
+/* Scroll-driven reveals: no JavaScript. Unsupported browsers show the element as is. */
+@supports (animation-timeline:view()){
+  .reveal-scroll,.reveal-left,.reveal-right,.reveal-scale,.reveal-wipe{
+    animation-fill-mode:both;animation-timing-function:var(--ease-out);
+    animation-timeline:view();animation-range:entry 0% entry 55%;
+  }
+  .reveal-scroll{animation-name:sl-up}
+  .reveal-left{animation-name:sl-left}
+  .reveal-right{animation-name:sl-right}
+  .reveal-scale{animation-name:sl-scale}
+  .reveal-wipe{animation-name:sl-wipe;animation-range:entry 0% entry 70%}
+
+  /* Image frame: wipe open while the photo settles from a slight zoom */
+  .img-reveal{overflow:hidden;animation:sl-wipe var(--ease-out) both;animation-timeline:view();animation-range:entry 0% entry 70%}
+  .img-reveal>img{animation:sl-img-settle linear both;animation-timeline:view();animation-range:entry 0% cover 55%}
+
+  /* Gentle depth: use on decorative shapes or orbs */
+  .parallax-a{animation:sl-parallax-a linear both;animation-timeline:scroll(root)}
+  .parallax-b{animation:sl-parallax-b linear both;animation-timeline:scroll(root)}
+
+  /* Add to your sticky header: it gains a frosted background as the page scrolls */
+  .header-scroll{animation:header-shrink linear both;animation-timeline:scroll(root);animation-range:0 140px}
+
+  /* Pure-CSS count-up that runs when the number scrolls into view */
+  .count-up{animation:count-up var(--ease-out) both;animation-timeline:view();animation-range:entry 10% cover 35%}
+}
+/* Fallback count-up on load for browsers without scroll-driven animation */
+@supports not (animation-timeline:view()){
+  .count-up{animation:count-up 1.8s var(--ease-out) both}
+}
+.count-up{counter-reset:n var(--n);font-variant-numeric:tabular-nums}
+.count-up::after{content:counter(n)}
+
+/* Reading progress: <div class="scroll-progress"></div> as the first child of body */
+.scroll-progress{position:fixed;inset:0 0 auto 0;z-index:60;height:3px;background:var(--color-brand);transform:scaleX(0);transform-origin:left;pointer-events:none}
+@supports (animation-timeline:scroll()){
+  .scroll-progress{animation:progress-grow linear both;animation-timeline:scroll(root)}
+}
+
+.float{animation:drift 6s var(--ease-in-out) infinite}
+.motion-orb{position:absolute;width:18rem;height:18rem;border-radius:9999px;background:radial-gradient(circle,rgba(111,132,255,.3),rgba(111,132,255,0) 68%);pointer-events:none;animation:motion-float 9s var(--ease-in-out) infinite}
+
+/* Logo or testimonial strip. Duplicate the items once inside .marquee-track so the loop is seamless. */
+.marquee{overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.marquee-track{display:flex;width:max-content;gap:var(--gap,2rem);animation:marquee var(--marquee-speed,40s) linear infinite}
+.marquee:hover .marquee-track{animation-play-state:paused}
+
+/* ==========================================================
+   HOME HERO: the one orchestrated moment
+   ========================================================== */
+.home-hero{min-height:42rem;background:linear-gradient(var(--hero-angle),#07112d 0%,#0b1744 54%,#142a69 100%);animation:hero-angle 20s var(--ease-in-out) infinite alternate}
+.home-hero::before{position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(8,17,45,.94) 0%,rgba(8,17,45,.86) 28%,rgba(8,17,45,.55) 54%,rgba(8,17,45,.12) 100%),linear-gradient(0deg,rgba(5,11,29,.48),transparent 34%);content:"";pointer-events:none}
+.home-hero-glow{position:absolute;z-index:0;width:28rem;height:28rem;border-radius:50%;filter:blur(84px);pointer-events:none;animation:motion-float 14s var(--ease-in-out) infinite}
 .home-hero-glow-one{top:-22rem;right:8%;background:rgba(107,137,255,.14)}
-.home-hero-glow-two{right:22%;bottom:-25rem;background:rgba(55,83,225,.13)}
-.home-hero-eyebrow{display:flex;align-items:center;gap:.8rem;color:rgba(231,235,255,.78);font-size:.72rem;font-weight:700;letter-spacing:.22em}
-.home-hero-eyebrow::before{width:2rem;height:1px;background:#d6bd8b;content:""}
+.home-hero-glow-two{right:22%;bottom:-25rem;background:rgba(55,83,225,.13);animation-delay:-6s}
+@supports (animation-timeline:scroll()){
+  .home-hero-glow-one{animation:motion-float 14s var(--ease-in-out) infinite,sl-parallax-a linear both;animation-timeline:auto,scroll(root)}
+  .home-hero-glow-two{animation:motion-float 14s var(--ease-in-out) -6s infinite,sl-parallax-b linear both;animation-timeline:auto,scroll(root)}
+}
+.home-hero-eyebrow{display:flex;align-items:center;gap:.65rem;color:rgba(231,235,255,.78);font-size:.74rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase}
+.home-hero-eyebrow::before{width:2rem;height:1px;background:#d6bd8b;content:"";transform-origin:left;animation:line-grow 1s var(--ease-out) .2s backwards}
 .home-hero-headline-accent{color:#e2d4b8}
 .home-hero-copy{max-width:47rem}
-.home-hero-headline{font-family:var(--font-display);font-size:clamp(2.6rem,5vw,4.55rem);font-weight:800;letter-spacing:-.06em;line-height:.94;text-transform:uppercase;text-wrap:balance}
+.home-hero-headline{font-family:var(--font-heading);font-size:clamp(3rem,5.8vw,5.25rem);font-weight:600;letter-spacing:-.045em;line-height:.98;text-wrap:balance}
 .home-hero-description{max-width:34rem;text-shadow:0 1px 14px rgba(4,10,35,.25)}
 .home-hero-caption{max-width:24rem}
-.home-hero-building{position:absolute;z-index:0;top:50%;right:0;width:68%;height:88%;object-fit:contain;object-position:right center;transform:translateY(-50%)}
+.home-hero-building{position:absolute;z-index:0;inset:0;width:100%;height:100%;object-fit:cover;object-position:65% center;animation:building-in 1.6s var(--ease-out) .15s backwards}
+
+.home-hero-button-primary,.home-hero-button-glass{position:relative;overflow:hidden;transition:transform var(--dur-fast) var(--ease-out),box-shadow var(--dur-base) var(--ease-out),background-color var(--dur-base) ease,border-color var(--dur-base) ease}
 .home-hero-button-primary{border:1px solid rgba(255,255,255,.8);background:rgba(255,255,255,.96);color:#0b1450;box-shadow:0 10px 28px rgba(3,8,35,.18);backdrop-filter:blur(12px)}
-.home-hero-button-primary:hover{background:#e8eefa}
+.home-hero-button-primary::after{position:absolute;inset:0;width:40%;background:linear-gradient(90deg,transparent,rgba(35,57,255,.16),transparent);content:"";transform:translateX(-120%) skewX(-18deg);pointer-events:none}
+.home-hero-button-primary:hover{background:#e8eefa;box-shadow:0 18px 38px rgba(3,8,35,.32)}
+.home-hero-button-primary:hover::after{animation:sheen .9s var(--ease-out)}
 .home-hero-button-glass{border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.055);color:white;backdrop-filter:blur(12px)}
 .home-hero-button-glass:hover{border-color:rgba(255,255,255,.52);background:rgba(255,255,255,.12)}
-.branch-hero{background:linear-gradient(118deg,#0b1450 0%,#15246b 56%,#2539a5 100%)}
-.branch-hero-glow{position:absolute;width:19rem;height:19rem;border-radius:9999px;pointer-events:none;filter:blur(2px);animation:branch-glow 12s ease-in-out infinite}
+
+.hero-zoom{animation:heroSkyDrift 36s var(--ease-in-out) infinite alternate;will-change:transform}
+
+/* ==========================================================
+   BRANCH PAGES
+   ========================================================== */
+.branch-hero{background:linear-gradient(var(--branch-angle),#0b1450 0%,#15246b 56%,#2539a5 100%);animation:branch-angle 18s var(--ease-in-out) infinite alternate}
+.branch-hero-glow{position:absolute;width:19rem;height:19rem;border-radius:9999px;pointer-events:none;filter:blur(2px);animation:branch-glow 12s var(--ease-in-out) infinite}
 .branch-hero-glow-one{top:-11rem;right:4%;background:radial-gradient(circle,rgba(90,119,255,.42),rgba(90,119,255,0) 68%)}
 .branch-hero-glow-two{right:30%;bottom:-15rem;background:radial-gradient(circle,rgba(218,174,55,.2),rgba(218,174,55,0) 68%);animation-delay:-5s}
-.branch-location-item{animation:branch-enter .45s cubic-bezier(.2,.7,.2,1) both}
-.branch-map-shell{animation:map-enter .75s cubic-bezier(.2,.7,.2,1) both}
+
+.branch-location-item{animation:branch-enter .6s var(--ease-out) both;transition:transform var(--dur-base) var(--ease-out),background-color var(--dur-base) ease,box-shadow var(--dur-base) ease}
+.branch-location-item:nth-child(1){animation-delay:.04s}
+.branch-location-item:nth-child(2){animation-delay:.11s}
+.branch-location-item:nth-child(3){animation-delay:.18s}
+.branch-location-item:nth-child(4){animation-delay:.25s}
+.branch-location-item:nth-child(5){animation-delay:.32s}
+.branch-location-item:nth-child(n+6){animation-delay:.39s}
+.branch-location-item:hover{transform:translateX(5px)}
+
+.branch-map-shell{animation:map-enter 1s var(--ease-out) both}
 .branch-map-shell .leaflet-container{z-index:0}
-.testimonial-card{transition:transform .35s cubic-bezier(.2,.7,.2,1),background-color .35s ease,border-color .35s ease}
-.testimonial-card:hover{transform:translateY(-6px);background-color:rgba(255,255,255,.13);border-color:rgba(255,255,255,.3)}
-.site-nav-link{position:relative}
-.site-nav-link::after{position:absolute;right:1rem;bottom:.35rem;left:1rem;height:1px;background:currentColor;content:"";transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
-.site-nav-link:hover::after,.site-nav-link[aria-current="page"]::after{transform:scaleX(1)}
-.footer-link{transition:color .2s ease,opacity .2s ease}
-.footer-link:hover{color:#c7d2fe}
-.footer-pill{border:1px solid rgba(255,255,255,.2);border-radius:9999px;padding:.5rem .85rem;color:rgba(255,255,255,.86);font-size:.75rem;font-weight:600;transition:background-color .2s ease,border-color .2s ease,transform .2s ease}
-.footer-pill:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.45);background:rgba(255,255,255,.1)}
-input:not([type="hidden"]),textarea,select{transition:border-color .2s ease,box-shadow .2s ease}
-input:not([type="hidden"]):focus,textarea:focus,select:focus{border-color:var(--color-brand);box-shadow:0 0 0 3px rgba(35,57,255,.12);outline:none}
-button:not(:disabled){transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease}
-button:not(:disabled):hover{transform:translateY(-1px)}
-button:not(:disabled):active{transform:translateY(0)}
-.btn{transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease}
-.btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(11,20,80,.14)}
-.btn:active{transform:translateY(0)}
-.card-hover{transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s ease}
-.card-hover:hover{transform:translateY(-6px);box-shadow:0 16px 36px rgba(11,20,80,.1)}
-.img-zoom{overflow:hidden}
-.img-zoom img{transition:transform .5s ease}
-.img-zoom:hover img{transform:scale(1.06)}
+
 .cosmo-map-pin{border:0;background:transparent}
-.cosmo-map-pin span{display:block;width:24px;height:24px;border:2px solid white;border-radius:50% 50% 50% 0;background:#2339ff;box-shadow:0 2px 6px rgba(11,20,80,.45);transform:rotate(-45deg);transition:background-color .2s ease,scale .2s ease}
+.cosmo-map-pin span{position:relative;display:block;width:24px;height:24px;border:2px solid white;border-radius:50% 50% 50% 0;background:#2339ff;box-shadow:0 2px 6px rgba(11,20,80,.45);transform:rotate(-45deg);transition:background-color var(--dur-base) ease,scale var(--dur-base) var(--ease-spring),box-shadow var(--dur-base) ease;animation:pin-drop .7s var(--ease-spring) backwards}
+.cosmo-map-pin:hover span{scale:1.12;box-shadow:0 6px 14px rgba(11,20,80,.5)}
 .cosmo-map-pin span::after{position:absolute;top:7px;left:7px;width:6px;height:6px;border-radius:50%;background:white;content:""}
-.cosmo-map-pin span.is-active{background:#c59b00;scale:1.15}
+.cosmo-map-pin span.is-active{background:#c59b00;scale:1.18}
 .cosmo-map-pin span.is-active::before{position:absolute;inset:0;border:2px solid #c59b00;border-radius:inherit;content:"";animation:pin-pulse 1.8s ease-out infinite}
-.shimmer{background:linear-gradient(90deg,#fff,#eef1ff,#fff);background-size:200% 100%;animation:shimmer 1.6s linear infinite}
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
-  .card-hover:hover,.testimonial-card:hover,.btn:hover,.btn:active,button:not(:disabled):hover,button:not(:disabled):active{transform:none;box-shadow:none}
-  .img-zoom:hover img{transform:none}
-  .branch-location-item{opacity:1;transform:none}
-  .branch-map-shell{animation:none}
-  .footer-pill:hover{transform:none}
+
+/* ==========================================================
+   CARDS
+   ========================================================== */
+.testimonial-card{transition:transform var(--dur-base) var(--ease-out),background-color var(--dur-base) ease,border-color var(--dur-base) ease,box-shadow var(--dur-base) ease}
+.card-hover{transition:transform var(--dur-base) var(--ease-out),box-shadow var(--dur-base) var(--ease-out)}
+.img-zoom{overflow:hidden}
+.img-zoom img{transition:transform .8s var(--ease-out)}
+
+/* Optional cursor spotlight. Add class "spotlight" to a card, plus this tiny script:
+   document.addEventListener('pointermove', e => {
+     const c = e.target.closest('.spotlight'); if (!c) return;
+     const r = c.getBoundingClientRect();
+     c.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+     c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+   }); */
+.spotlight{position:relative;isolation:isolate}
+.spotlight::before{position:absolute;inset:0;z-index:-1;border-radius:inherit;background:radial-gradient(340px circle at var(--mx,50%) var(--my,0%),rgba(35,57,255,.13),transparent 70%);content:"";opacity:0;transition:opacity var(--dur-base) ease;pointer-events:none}
+
+@media (hover:hover){
+  .testimonial-card:hover{transform:translateY(-6px);background-color:rgba(255,255,255,.13);border-color:rgba(255,255,255,.3);box-shadow:0 22px 44px -20px rgba(0,0,0,.5)}
+  .card-hover:hover{transform:translateY(-6px);box-shadow:var(--shadow-lift)}
+  .img-zoom:hover img{transform:scale(1.07)}
+  .spotlight:hover::before{opacity:1}
 }
+.card-hover:active{transform:translateY(-2px);transition-duration:var(--dur-fast)}
+
+/* ==========================================================
+   LINKS, NAV, FOOTER
+   ========================================================== */
+.site-nav-link{position:relative;transition:color var(--dur-base) ease,opacity var(--dur-base) ease}
+.site-nav-link::after{position:absolute;right:1rem;bottom:.35rem;left:1rem;height:1px;background:currentColor;content:"";transform:scaleX(0);transform-origin:right;transition:transform var(--dur-base) var(--ease-out)}
+.site-nav-link:hover::after,.site-nav-link[aria-current="page"]::after{transform:scaleX(1);transform-origin:left}
+
+/* Inline text link with a drawn underline */
+.link-underline{background:linear-gradient(currentColor,currentColor) 0 100%/0 1px no-repeat;transition:background-size var(--dur-base) var(--ease-out)}
+.link-underline:hover{background-size:100% 1px}
+
+.footer-link{transition:color var(--dur-base) ease,opacity var(--dur-base) ease,translate var(--dur-base) var(--ease-out)}
+.footer-link:hover{color:#c7d2fe;translate:3px 0}
+.footer-pill{border:1px solid rgba(255,255,255,.2);border-radius:9999px;padding:.5rem .85rem;color:rgba(255,255,255,.86);font-size:.75rem;font-weight:600;transition:background-color var(--dur-base) ease,border-color var(--dur-base) ease,transform var(--dur-base) var(--ease-out)}
+.footer-pill:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.45);background:rgba(255,255,255,.1)}
+
+/* ==========================================================
+   BUTTONS AND FORMS
+   ========================================================== */
+button:not(:disabled){transition:transform var(--dur-fast) var(--ease-out),box-shadow var(--dur-base) ease,background-color var(--dur-base) ease,color var(--dur-base) ease}
+button:disabled{cursor:not-allowed}
+.btn{transition:transform var(--dur-fast) var(--ease-out),box-shadow var(--dur-base) var(--ease-out),background-color var(--dur-base) ease}
+
+/* Optional: <span class="arrow">→</span> inside a button slides forward on hover */
+.btn-arrow .arrow{display:inline-block;transition:translate var(--dur-base) var(--ease-out)}
+
+@media (hover:hover){
+  button:not(:disabled):hover{transform:translateY(-1px)}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(11,20,80,.18)}
+  .btn-arrow:hover .arrow{translate:5px 0}
+}
+button:not(:disabled):active,.btn:active{transform:scale(.97);box-shadow:none;transition-duration:.08s}
+
+input:not([type="hidden"]),textarea,select{transition:border-color var(--dur-base) ease,box-shadow var(--dur-base) var(--ease-out),background-color var(--dur-base) ease}
+input:not([type="hidden"]):focus,textarea:focus,select:focus{border-color:var(--color-brand);box-shadow:0 0 0 4px rgba(35,57,255,.14);outline:none}
+input[aria-invalid="true"],textarea[aria-invalid="true"]{border-color:#ef4444;animation:shake .45s var(--ease-out)}
+
+.shimmer{background:linear-gradient(90deg,#fff,#eef1ff,#fff);background-size:200% 100%;animation:shimmer 1.6s linear infinite}
+
+/* ==========================================================
+   DIALOGS AND ACCORDIONS
+   Open and close with a spring and a blurred backdrop, no JavaScript needed
+   ========================================================== */
+dialog{opacity:0;scale:.95;translate:0 12px;transition:opacity .3s ease,scale .45s var(--ease-spring),translate .45s var(--ease-spring),overlay .3s allow-discrete,display .3s allow-discrete}
+dialog[open]{opacity:1;scale:1;translate:0 0}
+@starting-style{dialog[open]{opacity:0;scale:.95;translate:0 12px}}
+dialog::backdrop{background:rgba(8,17,45,0);-webkit-backdrop-filter:blur(0);backdrop-filter:blur(0);transition:background-color .35s ease,backdrop-filter .35s ease,overlay .35s allow-discrete,display .35s allow-discrete}
+dialog[open]::backdrop{background:rgba(8,17,45,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+@starting-style{dialog[open]::backdrop{background:rgba(8,17,45,0);backdrop-filter:blur(0)}}
+
+@supports selector(details::details-content){
+  details::details-content{block-size:0;overflow:clip;transition:block-size .45s var(--ease-out),content-visibility .45s allow-discrete}
+  details[open]::details-content{block-size:auto}
+}
+details>summary .chevron{display:inline-block;transition:rotate var(--dur-base) var(--ease-out)}
+details[open]>summary .chevron{rotate:180deg}
+
+/* ==========================================================
+   DESIGN SYSTEM: layout, type, surfaces, buttons
+   Layered, so any Tailwind utility on the same element overrides these.
+   ========================================================== */
+@layer components{
+  /* Layout */
+  .wrap{width:min(100% - 2.5rem,76rem);margin-inline:auto}
+  .wrap-narrow{width:min(100% - 2.5rem,48rem);margin-inline:auto}
+  .section{padding-block:clamp(4.5rem,9vw,8.5rem)}
+  .section-tight{padding-block:clamp(3rem,6vw,5rem)}
+  .section-dark{position:relative;isolation:isolate;background:linear-gradient(160deg,var(--color-navy-900),var(--color-navy) 60%,#15246b);color:#e7ebff}
+  .section-dark :is(h1,h2,h3,h4){color:#fff}
+
+  /* Type scale (fluid) */
+  .t-display{font-family:var(--heading-family,var(--font-heading));font-size:clamp(2.5rem,5.6vw,4.4rem);line-height:1.03;letter-spacing:-.032em;font-weight:600}
+  .t-title{font-family:var(--heading-family,var(--font-heading));font-size:clamp(1.9rem,3.6vw,3rem);line-height:1.08;letter-spacing:-.026em;font-weight:600}
+  .t-subtitle{font-size:clamp(1.25rem,2vw,1.6rem);line-height:1.25;letter-spacing:-.018em;font-weight:650}
+  .t-lead{font-size:clamp(1.08rem,1.5vw,1.25rem);line-height:1.6;color:var(--color-muted);max-width:42rem}
+  .t-small{font-size:.875rem;line-height:1.5;color:var(--color-muted)}
+  .stat-number{font-family:var(--heading-family,var(--font-heading));font-size:clamp(2.6rem,5vw,4rem);line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--color-navy)}
+  .prose-lite{max-width:68ch}
+  .prose-lite>*+*{margin-top:1.1em}
+  .prose-lite a{color:var(--color-brand-700);text-decoration:underline;text-decoration-color:var(--color-brand-200);transition:text-decoration-color .25s ease}
+  .prose-lite a:hover{text-decoration-color:currentColor}
+
+  /* Hairline divider with a small sand mark in the middle */
+  .rule{height:1px;border:0;background:linear-gradient(90deg,transparent,var(--color-line) 20%,var(--color-line) 80%,transparent)}
+
+  /* Surfaces */
+  .surface{background:#fff;border:1px solid var(--color-line);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+  .surface-tint{background:linear-gradient(180deg,#fff,var(--color-brand-50));border:1px solid var(--color-brand-100);border-radius:var(--radius-card)}
+  .card-hover{box-shadow:var(--shadow-card)}
+  .testimonial-card{background:linear-gradient(160deg,rgba(255,255,255,.10),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.14);border-radius:var(--radius-card);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+  .img-zoom{border-radius:inherit}
+
+  /* Buttons: .btn-primary, .btn-secondary, .btn-ghost (combine with .btn-arrow for a sliding arrow) */
+  .btn-primary,.btn-secondary,.btn-ghost{display:inline-flex;align-items:center;justify-content:center;gap:.6rem;padding:.85rem 1.55rem;border-radius:9999px;font-weight:600;letter-spacing:-.005em;line-height:1.2;cursor:pointer;text-decoration:none;transition:transform var(--dur-fast) var(--ease-out),box-shadow var(--dur-base) var(--ease-out),background-color var(--dur-base) ease,color var(--dur-base) ease,background-size .5s var(--ease-out)}
+  .btn-primary{color:#fff;background:linear-gradient(180deg,var(--color-brand-500),var(--color-brand-600));box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 1px 2px rgba(11,20,80,.2),0 12px 26px -10px rgba(35,57,255,.6)}
+  .btn-primary:hover{background:linear-gradient(180deg,var(--color-brand-600),var(--color-brand-700));box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px rgba(11,20,80,.2),0 18px 34px -10px rgba(35,57,255,.7)}
+  /* Secondary fills upward with navy on hover */
+  .btn-secondary{color:var(--color-navy);border:1.5px solid var(--color-navy);background:linear-gradient(var(--color-navy),var(--color-navy)) 0 100%/100% 0 no-repeat}
+  .btn-secondary:hover{color:#fff;background-size:100% 100%}
+  .btn-ghost{color:var(--color-brand-700);background:transparent}
+  .btn-ghost:hover{background:var(--color-brand-50)}
+
+  .chip{display:inline-flex;align-items:center;gap:.4rem;padding:.28rem .8rem;border-radius:9999px;background:var(--color-brand-50);border:1px solid var(--color-brand-100);color:var(--color-brand-800);font-size:.8rem;font-weight:600;line-height:1.4}
+
+  .skip-link{position:fixed;left:1rem;top:-4.5rem;z-index:100;padding:.7rem 1.1rem;border-radius:.75rem;background:var(--color-navy);color:#fff;transition:top .25s var(--ease-out)}
+  .skip-link:focus{top:1rem}
+}
+
+/* Home hero: faint architectural grid that fades out toward the text */
+.home-hero::after{position:absolute;inset:0;z-index:1;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:72px 72px;-webkit-mask-image:radial-gradient(ellipse 70% 85% at 82% 50%,#000,transparent 75%);mask-image:radial-gradient(ellipse 70% 85% at 82% 50%,#000,transparent 75%);content:"";pointer-events:none}
+
+/* Branch locations: the selected item gets a brand edge and a lifted surface */
+.branch-location-item.is-active,.branch-location-item[aria-current="true"]{background:#fff;border-color:var(--color-brand-200);box-shadow:inset 3px 0 0 var(--color-brand),var(--shadow-card)}
+
+/* Map frame and Leaflet controls, restyled to match */
+.branch-map-shell{border-radius:1.5rem;overflow:hidden;border:1px solid var(--color-line);box-shadow:var(--shadow-card)}
+.branch-map-shell .leaflet-bar{border:0;border-radius:.85rem;overflow:hidden;box-shadow:var(--shadow-card)}
+.branch-map-shell .leaflet-bar a{width:2.25rem;height:2.25rem;line-height:2.25rem;color:var(--color-navy);border-bottom-color:var(--color-line);transition:background-color var(--dur-base) ease,color var(--dur-base) ease}
+.branch-map-shell .leaflet-bar a:hover{background:var(--color-brand-50);color:var(--color-brand-700)}
+.branch-map-shell .leaflet-popup-content-wrapper{border-radius:1rem;padding:.25rem;box-shadow:0 22px 44px -14px rgba(11,20,80,.4);font-family:var(--font-display)}
+.branch-map-shell .leaflet-popup-content{margin:.8rem 1rem;line-height:1.45;color:var(--color-ink)}
+.branch-map-shell .leaflet-popup-tip{box-shadow:none}
+.branch-map-shell .leaflet-control-attribution{background:rgba(255,255,255,.8);backdrop-filter:blur(6px);border-radius:.6rem 0 0 0}
+
+/* ==========================================================
+   RESPONSIVE HERO LAYOUT
+   ========================================================== */
 @media (min-width:1024px){
   .home-hero{min-height:100svh}
-  .home-hero-copy{max-width:52%}
-  .home-hero-building{width:66%;height:84%}
+  .home-hero-copy{max-width:58rem}
 }
 @media (min-width:768px) and (max-width:1023px){
   .home-hero{min-height:34rem}
   .home-hero-copy{max-width:56%}
-  .home-hero-headline{font-size:clamp(2.7rem,5.2vw,3.8rem)}
-  .home-hero-building{width:66%;height:76%}
-  .home-hero::before{background:linear-gradient(90deg,#08112d 0%,rgba(8,17,45,.96) 38%,rgba(8,17,45,.7) 62%,rgba(8,17,45,.18) 100%)}
+  .home-hero-headline{font-size:clamp(2.7rem,6vw,4rem)}
+  .home-hero::before{background:linear-gradient(90deg,rgba(8,17,45,.94) 0%,rgba(8,17,45,.82) 38%,rgba(8,17,45,.56) 65%,rgba(8,17,45,.18) 100%)}
 }
 @media (max-width:767px){
-  .home-hero{min-height:auto}
-  .home-hero::before{background:linear-gradient(180deg,#08112d 0%,rgba(8,17,45,.96) 52%,rgba(8,17,45,.3) 100%)}
+  .home-hero{min-height:42rem}
+  .home-hero::before{background:linear-gradient(180deg,rgba(8,17,45,.94) 0%,rgba(8,17,45,.88) 58%,rgba(8,17,45,.64) 100%)}
   .home-hero-copy{max-width:44rem}
-  .home-hero-headline{font-size:clamp(2.45rem,8vw,3.5rem)}
+  .home-hero-headline{font-size:clamp(2.65rem,9vw,4rem)}
   .home-hero-description{max-width:32rem}
-  .home-hero-building{top:auto;right:0;bottom:0;width:100%;height:44%;object-position:center bottom;transform:none;opacity:.82}
+  .home-hero-building{object-position:62% center}
+}
+@media (max-width:767px){
+  .home-hero::after{background-size:48px 48px;-webkit-mask-image:linear-gradient(180deg,transparent,#000 70%);mask-image:linear-gradient(180deg,transparent,#000 70%)}
 }
 @media (max-width:480px){
-  .home-hero-headline{max-width:20rem;font-size:clamp(2.25rem,10vw,3rem)}
-  .home-hero-eyebrow{font-size:.62rem;letter-spacing:.15em}
+  .home-hero-headline{max-width:20rem;font-size:clamp(2.35rem,10vw,3.15rem)}
+  .home-hero-eyebrow{gap:.4rem;font-size:.62rem;letter-spacing:.12em}
   .home-hero-description{font-size:.95rem;line-height:1.55}
   .home-hero-copy .mt-8{gap:.55rem}
   .home-hero-button-primary,.home-hero-button-glass{padding-inline:1.05rem}
   .home-hero-caption{margin-top:2rem}
-  .home-hero-building{height:38%;opacity:.76}
 }
 
+/* ==========================================================
+   ADMIN DARK THEME (colors unchanged; now fades between themes)
+   ========================================================== */
+.admin-dark{color-scheme:dark;background:#0b1220;color:#e2e8f0}
+.admin-dark,.admin-dark *{transition-property:background-color,border-color,color;transition-duration:var(--dur-base);transition-timing-function:var(--ease-out)}
+.admin-dark.bg-slate-50,.admin-dark .bg-slate-50{background-color:#111b2b}
+.admin-dark .bg-white,.admin-dark [class~="bg-white/90"]{background-color:#162235}
+.admin-dark .bg-slate-100{background-color:#202c40}
+.admin-dark .border-slate-100,.admin-dark .border-slate-200,.admin-dark .border-slate-300{border-color:#334155}
+.admin-dark .divide-slate-100>:not([hidden])~:not([hidden]){border-color:#263449}
+.admin-dark .text-slate-900{color:#f1f5f9}
+.admin-dark .text-slate-800,.admin-dark .text-slate-700,.admin-dark .text-slate-600{color:#cbd5e1}
+.admin-dark .text-slate-500,.admin-dark .text-slate-400{color:#94a3b8}
+.admin-dark .text-navy{color:#e2e8f0}
+.admin-dark .text-brand{color:#a5b4fc}
+.admin-dark .bg-brand\/10,.admin-dark [class~="bg-brand/[.04]"]{background-color:rgba(99,102,241,.18)}
+.admin-dark [class~="hover:bg-slate-50"]:hover{background-color:#202c40}
+.admin-dark input:not([type="checkbox"]):not([type="radio"]),.admin-dark textarea,.admin-dark select{border-color:#475569;background-color:#111b2b;color:#e2e8f0}
+.admin-dark input::placeholder,.admin-dark textarea::placeholder{color:#94a3b8}
+.admin-dark option{background:#162235;color:#e2e8f0}
+.admin-dark .bg-emerald-50{background-color:rgba(16,185,129,.15)}
+.admin-dark .text-emerald-600,.admin-dark .text-emerald-700{color:#6ee7b7}
+.admin-dark .bg-amber-50{background-color:rgba(245,158,11,.15)}
+.admin-dark .text-amber-600,.admin-dark .text-amber-700,.admin-dark .text-amber-800{color:#fcd34d}
+.admin-dark .bg-sky-50,.admin-dark .bg-blue-50{background-color:rgba(14,165,233,.15)}
+.admin-dark .text-sky-600,.admin-dark .text-sky-700,.admin-dark .text-blue-700{color:#7dd3fc}
+.admin-dark .bg-violet-50{background-color:rgba(139,92,246,.18)}
+.admin-dark .text-violet-600,.admin-dark .text-violet-700{color:#c4b5fd}
+.admin-dark .bg-red-50{background-color:rgba(239,68,68,.15)}
+.admin-dark .text-red-600,.admin-dark .text-red-700{color:#fca5a5}
+.admin-dark .bg-slate-100{color:#cbd5e1}
+.admin-dark .ring-slate-500\/20{--tw-ring-color:rgba(148,163,184,.25)}
 
-@keyframes heroSkyDrift {
-  from { transform: scale(1.07) translate3d(-.65%, 0, 0); }
-  to   { transform: scale(1.07) translate3d(.65%, 0, 0); }
+/* ==========================================================
+   MOTION UPGRADE: paste this block into index.css, directly
+   ABOVE the "REDUCED MOTION" section at the bottom.
+   ========================================================== */
+
+/* Page entrance: opacity only, so it never creates a containing block for fixed children */
+@keyframes page-in{from{opacity:0}}
+.page-enter{animation:page-in .55s var(--ease-out) both}
+
+/* ---------- Hero: the one orchestrated moment ----------
+   1. The building settles in (see the fix below)
+   2. The headline lands word by word
+   3. "1951" counts up in the bottom bar
+   4. On scroll, the hero copy lifts away instead of just being covered */
+
+/* FIX: .hero-zoom and .home-hero-building both set `animation`, so the later rule
+   (.hero-zoom) silently cancelled the building-in entrance. Combine them here. */
+.home-hero-building.hero-zoom{
+  animation:
+    building-in 1.6s var(--ease-out) .15s backwards,
+    heroSkyDrift 36s var(--ease-in-out) infinite alternate;
 }
-.hero-zoom { animation: heroSkyDrift 36s ease-in-out infinite alternate; will-change: transform; }
-@media (prefers-reduced-motion: reduce) { .hero-zoom { animation: none; } }
+
+@keyframes word-in{from{opacity:0;translate:0 .4em;filter:blur(8px)}}
+.word{display:inline-block;animation:word-in 1s var(--ease-out) calc(.25s + var(--i,0) * 85ms) backwards}
+
+.count-up.hero-count{
+  display:inline-block;min-width:4ch;
+  animation:count-up 2.2s var(--ease-out) .9s both;
+  animation-timeline:auto;animation-range:normal;
+}
+
+@keyframes hero-leave{to{opacity:0;translate:0 -3rem}}
+@supports (animation-timeline:scroll()){
+  .home-hero-copy{animation:hero-leave linear both;animation-timeline:scroll(root);animation-range:0 55svh}
+}
+
+/* ---------- Motion that answers the person's action ---------- */
+
+/* Pulse ring while we look up the location */
+.is-locating{position:relative}
+.is-locating::after{position:absolute;inset:0;border:2px solid var(--color-brand);border-radius:inherit;content:"";animation:pin-pulse 1.4s ease-out infinite}
+
+@keyframes spin{to{rotate:360deg}}
+.spinner{display:inline-block;width:1em;height:1em;margin-right:.55rem;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+
+/* Result and directions button appear when the nearest branch is found */
+@keyframes result-in{from{opacity:0;translate:0 8px}}
+.result-in{animation:result-in .5s var(--ease-out) both}
+
+/* ---------- "A simple next step": a real sequence, so it fills in step by step ---------- */
+@keyframes step-fill{
+  from{background-color:var(--color-brand-100);color:var(--color-brand-700);scale:.88}
+  to{background-color:var(--color-brand);color:#fff;scale:1}
+}
+@supports (animation-timeline:view()){
+  .step-num{
+    animation:step-fill linear both;animation-timeline:view();
+    animation-range:entry calc(10% + var(--i,0) * 18%) entry calc(60% + var(--i,0) * 18%);
+  }
+}
+
+/* Arrow nudges forward on link hover */
+.link-arrow .arrow{display:inline-block;transition:translate var(--dur-base) var(--ease-out)}
+@media (hover:hover){.link-arrow:hover .arrow{translate:5px 0}}
+
+@media (prefers-reduced-motion:reduce){
+  .link-arrow:hover .arrow{translate:none}
+  .step-num{scale:1}
+}
+
+/* ==========================================================
+   APP SHELL (App.tsx): route transitions, header, mobile menu
+   ========================================================== */
+
+/* Each route fades and rises in. `backwards` fill, so no transform is left behind afterwards
+   (a lingering transform would trap position:fixed children such as the chat widget). */
+@keyframes route-in{from{opacity:0;translate:0 14px}}
+.route-enter{animation:route-in .5s var(--ease-out) backwards}
+
+/* Header gains depth once the page scrolls (scroll-driven, no JavaScript) */
+@keyframes header-elevate{to{background-color:rgba(8,17,45,.99);border-color:rgba(255,255,255,.18);box-shadow:0 14px 30px -16px rgba(3,8,35,.7)}}
+@supports (animation-timeline:scroll()){
+  .site-header{animation:header-elevate linear both;animation-timeline:scroll(root);animation-range:0 120px}
+}
+
+/* Hamburger morphs into a cross */
+.burger line{transform-box:fill-box;transform-origin:center;transition:translate .35s var(--ease-out),rotate .35s var(--ease-out),opacity .2s ease}
+[aria-expanded="true"] .burger-top{translate:0 6px;rotate:45deg}
+[aria-expanded="true"] .burger-mid{opacity:0}
+[aria-expanded="true"] .burger-bot{translate:0 -6px;rotate:-45deg}
+
+/* Mobile menu: drops in, links follow one by one. Closed state is visibility:hidden, so it
+   is also removed from the tab order and from screen readers. */
+@media (max-width:767px){
+  .nav-menu[data-open="false"]{
+    opacity:0;translate:0 -.6rem;visibility:hidden;pointer-events:none;
+    transition:opacity .25s ease,translate .35s var(--ease-out),visibility 0s linear .35s;
+  }
+  .nav-menu[data-open="true"]{
+    opacity:1;translate:0 0;visibility:visible;
+    transition:opacity .3s var(--ease-out),translate .45s var(--ease-out),visibility 0s;
+  }
+  .nav-menu li{transition:opacity .4s var(--ease-out),translate .5s var(--ease-out)}
+  .nav-menu[data-open="true"] li{transition-delay:calc(var(--i,0) * 45ms + 80ms)}
+  .nav-menu[data-open="false"] li{opacity:0;translate:0 -.4rem;transition-delay:0s}
+}
+
+/* ==========================================================
+   NAVBAR
+   ========================================================== */
+
+/* Visible keyboard focus on the dark header (the brand-blue ring is too faint here) */
+.site-header :focus-visible{outline-color:#fff}
+
+/* Hairline of sand along the bottom edge; brightens as the page scrolls */
+.site-header::after{position:absolute;inset:auto 0 -1px 0;height:1px;background:linear-gradient(90deg,transparent,rgba(214,189,139,.6) 30%,rgba(214,189,139,.6) 70%,transparent);content:"";opacity:.3;pointer-events:none}
+
+/* Bar condenses slightly on scroll */
+@keyframes hairline-in{to{opacity:1}}
+@keyframes nav-condense{to{padding-block:.45rem}}
+@keyframes logo-condense{to{height:2.4rem}}
+@supports (animation-timeline:scroll()){
+  .site-header::after{animation:hairline-in linear both;animation-timeline:scroll(root);animation-range:0 120px}
+  .site-nav{animation:nav-condense linear both;animation-timeline:scroll(root);animation-range:0 120px}
+  .site-logo{animation:logo-condense linear both;animation-timeline:scroll(root);animation-range:0 120px}
+}
+
+/* The sliding pill replaces the per-link underline */
+.nav-menu .site-nav-link::after{display:none}
+.nav-menu li{position:relative;z-index:1}
+.nav-pill{display:none}
+
+@media (min-width:768px){
+  .nav-menu{--pill-x:0px;--pill-w:0px}
+  .nav-pill{display:block;position:absolute;z-index:0;top:0;bottom:0;left:0;width:var(--pill-w);translate:var(--pill-x) 0;border-radius:9999px;background:var(--color-brand);box-shadow:0 8px 20px -8px rgba(35,57,255,.8);opacity:0;pointer-events:none}
+  .nav-menu[data-ready="true"] .nav-pill{transition:translate .5s var(--ease-out),width .5s var(--ease-out),background-color .3s ease,box-shadow .3s ease,opacity .3s ease}
+  .nav-menu[data-pill="active"] .nav-pill{opacity:1}
+  .nav-menu[data-pill="hover"] .nav-pill{opacity:1;background:rgba(255,255,255,.14);box-shadow:none}
+}
+
+/* Mobile: roomier tap targets, current page marked with the brand fill */
+@media (max-width:767px){
+  .nav-menu .site-nav-link{padding:.8rem 1rem;font-size:1rem;border-radius:.9rem}
+  .nav-menu .site-nav-link[aria-current="page"]{background:var(--color-brand)}
+}
+
+/* ==========================================================
+   FOOTER
+   ========================================================== */
+
+/* Deeper navy, a soft brand glow in the corner, and a sand hairline on the top edge
+   that echoes the one under the header */
+.site-footer{position:relative;isolation:isolate;overflow:hidden;background:linear-gradient(180deg,var(--color-navy) 0%,var(--color-navy-900) 100%)}
+.site-footer::before{position:absolute;z-index:-1;top:-14rem;right:-8rem;width:34rem;height:34rem;border-radius:50%;background:radial-gradient(circle,rgba(69,89,255,.26),transparent 68%);content:"";pointer-events:none}
+.site-footer::after{position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,rgba(214,189,139,.6) 30%,rgba(214,189,139,.6) 70%,transparent);content:"";pointer-events:none}
+
+/* Links: a line draws under them on hover, on top of the existing nudge */
+.footer-link{padding-bottom:.15rem;background:linear-gradient(currentColor,currentColor) 0 100%/0 1px no-repeat;transition:color var(--dur-base) ease,opacity var(--dur-base) ease,translate var(--dur-base) var(--ease-out),background-size .4s var(--ease-out)}
+.footer-link:hover{background-size:100% 1px}
+
+/* Column headings carry a short sand rule */
+.footer-heading::after{display:block;width:1.75rem;height:1px;margin-top:.7rem;background:var(--color-sand);content:"";transform-origin:left}
+
+/* Columns rise in as the footer scrolls into view; the heading rules draw after them */
+@keyframes footer-rise{from{opacity:0;translate:0 28px}}
+@supports (animation-timeline:view()){
+  .footer-col{animation:footer-rise linear both;animation-timeline:view();animation-range:entry calc(var(--i,0) * 6%) entry calc(60% + var(--i,0) * 6%)}
+  .footer-heading::after{animation:line-grow linear both;animation-timeline:view();animation-range:entry 30% entry 90%}
+}
+
+.back-top .arrow{display:inline-block;transition:translate var(--dur-base) var(--ease-out)}
+@media (hover:hover){.back-top:hover .arrow{translate:0 -3px}}
+@media (prefers-reduced-motion:reduce){.back-top:hover .arrow{translate:none}}
+
+/* ==========================================================
+   SITE-WIDE POLISH
+   Applies to every public page (everything inside <main class="site-main">) without
+   touching each page's markup. The admin area is not affected.
+   Where a rule is in @layer base, a Tailwind class on the element still wins.
+   ========================================================== */
+
+/* The page content receives focus after navigation; no ring on the container itself */
+.site-main:focus{outline:none}
+.site-main{min-height:60vh}
+
+/* Page titles: one fluid scale, plus a short sand rule that ties them to the header and footer */
+@layer base{
+  .site-main h1:not(.home-hero-headline){font-size:clamp(2rem,4.2vw,2.9rem);line-height:1.1}
+}
+.site-main h1:not(.home-hero-headline)::after{display:block;width:2.5rem;height:2px;margin-top:.85rem;border-radius:2px;background:var(--color-sand);content:"";transform-origin:left;animation:line-grow .9s var(--ease-out) .25s backwards}
+
+/* Forms: comfortable targets, 16px text (stops iOS zoom-on-focus), readable placeholders */
+.site-main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]),select,textarea){font-size:1rem;min-height:2.75rem}
+.site-main textarea{min-height:7rem}
+.site-main :is(input[type="checkbox"],input[type="radio"]){width:1.15rem;height:1.15rem}
+.site-main :is(input,select,textarea):disabled{background-color:#f1f3fb;color:var(--color-muted)}
+::placeholder{color:#6b7394}
+
+/* Messages that appear after an action (form sent, inquiry found, something went wrong)
+   ease in, so the change is noticed without being jarring */
+.site-main :is([role="status"],[role="alert"]){animation:result-in .45s var(--ease-out) backwards}
+
+/* Plain links inside page content */
+.site-main a:not([class]){color:var(--color-brand-700);text-decoration:underline;text-decoration-color:var(--color-brand-200);transition:text-decoration-color .25s ease}
+.site-main a:not([class]):hover{text-decoration-color:currentColor}
+
+/* Touch screens: every button is at least 44px tall */
+@media (pointer:coarse){
+  .site-main :is(button,[role="button"],summary){min-height:2.75rem}
+}
+
+/* Footer: visible focus on the dark background */
+.site-footer :focus-visible{outline-color:#fff}
+
+/* Landing hero: sit below the sticky header so the bottom bar is visible on the first screen */
+@media (min-width:1024px){
+  .home-hero{min-height:calc(100svh - 4.25rem)}
+}

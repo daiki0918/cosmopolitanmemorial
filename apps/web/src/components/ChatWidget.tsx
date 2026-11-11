@@ -82,7 +82,7 @@ export default function ChatWidget() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  if (pathname.startsWith("/admin") || pathname === "/login") return null;
+  if (pathname.startsWith("/admin")) return null;
 
   function sendMessage(message: string) {
     const trimmed = message.trim();

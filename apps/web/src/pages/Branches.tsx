@@ -24,37 +24,6 @@ type Region = "Luzon" | "Visayas" | "Mindanao";
 const regions = ["All", "Luzon", "Visayas", "Mindanao"] as const;
 type RegionFilter = (typeof regions)[number];
 
-const hotlineBranches: Branch[] = [
-  { _id: "hotline-araneta", name: "Araneta Avenue", address: "Baloy Street, Gregorio Araneta Avenue", municipality: "Quezon City, Metro Manila", phone: "(02) 8242 5500 / (02) 8242 5499", location: { coordinates: [121.0171111, 14.6137514] }, pinAccuracy: "approximate" },
-  { _id: "hotline-tandang-sora", name: "Tandang Sora", address: "221 Tandang Sora Avenue", municipality: "Quezon City, Metro Manila", phone: "0926 662 5327 (Globe) / 0928 774 2515 (Smart)", location: { coordinates: [121.0397264, 14.676957] }, pinAccuracy: "mapped" },
-  { _id: "hotline-pasig", name: "Pasig City", address: "Mercedes Avenue, Evergreen Memorial Garden", municipality: "Pasig, Metro Manila", phone: "0926 662 5327 (Globe) / 0928 774 2515 (Smart)", location: { coordinates: [121.0928785, 14.5672308] }, pinAccuracy: "approximate" },
-  { _id: "hotline-baguio", name: "Cosmopolitan SF Memorial Chapels", municipality: "Baguio City, Benguet", location: { coordinates: [120.5933878, 16.411986] }, pinAccuracy: "approximate" },
-  { _id: "hotline-junquera", name: "Junquera Street (main branch)", address: "16-18 Junquera St", municipality: "Cebu City", province: "Cebu, 6000", phone: "(032) 231 0721 / (032) 231 3192 / (032) 256 0491", location: { coordinates: [123.8999598, 10.2981514] }, pinAccuracy: "mapped" },
-  { _id: "hotline-maracas", name: "Maracas Branch", address: "8VMX+64J, Cebu Veterans Dr", municipality: "Cebu City", province: "Cebu, 6000", phone: "(032) 231 0721 / (032) 231 3192 / (032) 256 0491", location: { coordinates: [123.8977508, 10.3330044] }, pinAccuracy: "mapped" },
-  { _id: "hotline-mandaue", name: "Mandaue City", address: "8WPV+GXM", municipality: "Mandaue", province: "Cebu", location: { coordinates: [123.9448773, 10.3362544] }, pinAccuracy: "mapped" },
-  { _id: "hotline-lapu-lapu", name: "Lapu-Lapu City", address: "8X74+PRX", municipality: "Lapu-Lapu", province: "Cebu", phone: "(032) 266 3446 / 0917 124 7905", location: { coordinates: [123.9570055, 10.3142556] }, pinAccuracy: "mapped" },
-  { _id: "hotline-cordova", name: "Cordova Branch", address: "Cattleya Memorial Garden, San Miguel", municipality: "Cordova, Cebu", phone: "0915 486 3889 / 0918 905 7820", location: { coordinates: [123.9494748, 10.2521909] }, pinAccuracy: "approximate" },
-  { _id: "hotline-liloan", name: "Liloan Branch", address: "CX2Q+6XQ, Bajac, Central Nautical Hwy", municipality: "Liloan", province: "6002 Cebu", phone: "(032) 424 9525", location: { coordinates: [123.9898805, 10.4005044] }, pinAccuracy: "mapped" },
-  { _id: "hotline-danao", name: "Danao City Branch", address: "832 National", municipality: "Danao", province: "5000 Cebu", phone: "(032) 328 2339 / 0920 949 8173 / 0933 359 3053", location: { coordinates: [124.0283744, 10.5180007] }, pinAccuracy: "approximate" },
-  { _id: "hotline-bogo", name: "Bogo City Branch", address: "22W2+GV5", municipality: "Bogo City", province: "Cebu", phone: "(032) 251 2038 / (032) 434 8312", location: { coordinates: [124.0021305, 11.0462506] }, pinAccuracy: "mapped" },
-  { _id: "hotline-carcar", name: "Carcar City Branch", address: "3JWP+WPV", municipality: "Carcar", province: "Cebu", phone: "(032) 487 9574", location: { coordinates: [123.6367523, 10.0972556] }, pinAccuracy: "mapped" },
-  { _id: "hotline-argao", name: "Argao Branch", address: "430 Natalio B. Bacalso S National Hwy", municipality: "Argao", province: "Cebu", phone: "(032) 485 8317", location: { coordinates: [123.605901, 9.8802091] }, pinAccuracy: "approximate" },
-  { _id: "hotline-davao", name: "Davao City Branch", address: "J. Camus Extension, Barangay 7-A", municipality: "Davao City, Davao", location: { coordinates: [125.6070489, 7.0725806] }, pinAccuracy: "approximate" },
-  { _id: "hotline-cagayan", name: "Cagayan de Oro Branch", address: "88 General Capistrano Street", municipality: "Cagayan de Oro City, Misamis Oriental", location: { coordinates: [124.64434, 8.483992] }, pinAccuracy: "mapped" },
-  { _id: "hotline-iligan", name: "Iligan City Branch", address: "Tibanga Highway", municipality: "Iligan City, Lanao del Norte", location: { coordinates: [124.2412, 8.2317] }, pinAccuracy: "approximate" },
-  { _id: "hotline-general-santos", name: "General Santos City", municipality: "General Santos, South Cotabato", location: { coordinates: [125.1721893, 6.1122217] }, pinAccuracy: "approximate" },
-  { _id: "hotline-tagum", name: "Tagum City", municipality: "Tagum, Davao del Norte", location: { coordinates: [125.8094853, 7.4470784] }, pinAccuracy: "approximate" },
-  { _id: "hotline-valencia", name: "Valencia City", municipality: "Valencia, Bukidnon", location: { coordinates: [125.0898033, 7.9028844] }, pinAccuracy: "approximate" },
-  { _id: "hotline-iloilo", name: "Iloilo City", municipality: "Iloilo, Western Visayas", location: { coordinates: [122.5736774, 10.6926464] }, pinAccuracy: "approximate" },
-  { _id: "hotline-guimaras", name: "Guimaras service area", municipality: "Guimaras, Western Visayas", location: { coordinates: [122.6238907, 10.5730629] }, pinAccuracy: "approximate" },
-];
-
-function cebuBranchKey(name: string) {
-  const normalized = name.toLowerCase().replace(/[^a-z]/g, "");
-  return ["lapulapu", "junquera", "maracas", "mandaue", "liloan", "danao", "bogo", "carcar", "argao"]
-    .find((key) => normalized.includes(key));
-}
-
 const mapPin = (active: boolean) => L.divIcon({
   className: "cosmo-map-pin",
   html: `<span class="${active ? "is-active" : ""}"></span>`,
@@ -141,35 +110,7 @@ export default function Branches() {
   const [selectedId, setSelectedId] = useState("");
   const [focusSelected, setFocusSelected] = useState(false);
   const { data, isLoading, error } = useQuery({ queryKey: ["branches"], queryFn: () => api<Branch[]>("/public/branches") });
-  const branches = useMemo(() => {
-    const published = data ?? [];
-    const updatedPublished = published.map((branch) => {
-      const key = cebuBranchKey(branch.name);
-      const correction = key && hotlineBranches.find((hotlineBranch) => cebuBranchKey(hotlineBranch.name) === key);
-      if (!correction) return branch;
-      return {
-        ...branch,
-        address: correction.address,
-        municipality: correction.municipality,
-        province: correction.province,
-        location: correction.location,
-        pinAccuracy: correction.pinAccuracy,
-      };
-    });
-    return [
-      ...updatedPublished,
-      ...hotlineBranches.filter((hotlineBranch) =>
-        !published.some((branch) => cebuBranchKey(branch.name) === cebuBranchKey(hotlineBranch.name) && cebuBranchKey(branch.name) !== undefined) &&
-        !published.some((branch) => {
-          const [branchLng, branchLat] = branch.location.coordinates;
-          const [hotlineLng, hotlineLat] = hotlineBranch.location.coordinates;
-          const latDistance = branchLat - hotlineLat;
-          const lngDistance = (branchLng - hotlineLng) * Math.cos((hotlineLat * Math.PI) / 180);
-          return Math.hypot(latDistance, lngDistance) * 111 < 0.3;
-        }),
-      ),
-    ];
-  }, [data]);
+  const branches = data ?? [];
   const filtered = useMemo(() => {
     const search = q.trim().toLowerCase();
     return branches.filter((branch) => {
@@ -223,7 +164,7 @@ export default function Branches() {
           </div>
 
           {isLoading && <div className="p-4"><Skeleton rows={3} /></div>}
-          {error && <p role="status" className="px-5 pb-2 text-xs text-amber-800">Showing hotline locations while verified branch records are unavailable.</p>}
+          {error && <p role="alert" className="px-5 pb-2 text-xs text-red-700">Could not load branch locations. Please try again later.</p>}
           <p className="px-4 pb-2 text-xs leading-5 text-slate-500">Area pins are approximate unless marked as a mapped address.</p>
           {!isLoading && filtered.length === 0 && <p className="p-5 text-sm text-slate-600">No locations match that search.</p>}
 

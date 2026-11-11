@@ -215,7 +215,7 @@ export const Privacy = () => (<section className="mx-auto max-w-4xl space-y-8 pb
     </Reveal>
     <Reveal delay={70} className="rounded-2xl border border-brand/10 bg-white p-6 shadow-sm">
       <h2 className="font-heading text-xl font-bold text-navy">How information is used</h2>
-      <p className="mt-3 leading-7 text-slate-600">Information submitted through the inquiry form is used to follow up on your request and manage its status. Please do not submit passwords, payment card details, government identification numbers or other sensitive information through the general contact form.</p>
+      <p className="mt-3 leading-7 text-slate-600">Information submitted through the inquiry form is used to follow up on your request and manage its status. If you provide an email address, we may use it to send updates about your inquiry status through our email service. If you separately opt in to SMS updates, your phone number and inquiry status may be processed by TextBee and sent through our registered Android phone; message and data rates may apply. Contact us through our website to withdraw consent. Please do not submit passwords, payment card details, government identification numbers or other sensitive information through the general contact form.</p>
     </Reveal>
     <Reveal delay={100} className="rounded-2xl border border-brand/10 bg-white p-6 shadow-sm">
       <h2 className="font-heading text-xl font-bold text-navy">Cookies and sign-in</h2>
@@ -224,7 +224,11 @@ export const Privacy = () => (<section className="mx-auto max-w-4xl space-y-8 pb
     </Reveal>
     <Reveal delay={150} className="rounded-2xl border border-brand/10 bg-white p-6 shadow-sm">
       <h2 className="font-heading text-xl font-bold text-navy">Storage and protection</h2>
-      <p className="mt-3 leading-7 text-slate-600">Inquiry information is kept in the service's application database and access is intended for authorized staff. The exact retention period, any service providers that process the information, and any cross-border storage arrangements need to be confirmed by the company.</p>
+      <p className="mt-3 leading-7 text-slate-600">Inquiry information is kept in the service's application database and access is intended for authorized staff. Email status updates are sent using Gmail when an email address is provided. SMS status updates are sent through TextBee and our registered Android phone only when you opt in. The exact retention period, any other service providers that process the information, and any cross-border storage arrangements need to be confirmed by the company.</p>
+    </Reveal>
+    <Reveal delay={170} className="rounded-2xl border border-brand/10 bg-white p-6 shadow-sm">
+      <h2 className="font-heading text-xl font-bold text-navy">Spam protection</h2>
+      <p className="mt-3 leading-7 text-slate-600">The contact form uses Cloudflare Turnstile to help distinguish people from automated spam. Cloudflare may process technical information, including your IP address and browser data, to provide this check. See the <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noreferrer" className="font-medium text-brand underline underline-offset-4">Cloudflare Privacy Policy</a>.</p>
     </Reveal>
     <Reveal delay={180} className="rounded-2xl border border-brand/10 bg-white p-6 shadow-sm">
       <h2 className="font-heading text-xl font-bold text-navy">Maps and external links</h2>

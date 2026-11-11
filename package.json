@@ -6,7 +6,7 @@
   ],
   "scripts": {
     "dev:api": "npm run dev -w apps/api",
-    "dev:web": "npm run dev -w apps/web",
+    "dev:web": "node scripts/wait-for-api.mjs && npm run dev -w apps/web",
     "build": "npm run build -w apps/api && npm run build -w apps/web",
     "seed": "npm run seed -w apps/api",
     "dev": "concurrently -n api,web \"npm:dev:api\" \"npm:dev:web\""

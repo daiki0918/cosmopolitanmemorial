@@ -1,18 +1,90 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import Reveal from "../components/Reveal";
+import Spinner from "../components/Spinner";
 import { IconPhone, IconPin, IconShield } from "../components/Icons";
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: HTMLElement, options: {
+        sitekey: string;
+        action: string;
+        callback: (token: string) => void;
+        "expired-callback": () => void;
+        "error-callback": () => void;
+      }) => string;
+      reset: (widgetId?: string) => void;
+      remove: (widgetId: string) => void;
+    };
+  }
+}
 
 export default function Contact() {
   const [ref, setRef] = useState("");
   const [err, setErr] = useState("");
+  const [copyMessage, setCopyMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileError, setTurnstileError] = useState("");
+  const captchaContainer = useRef<HTMLDivElement>(null);
+  const widgetId = useRef<string>();
+  const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
+  const branches = useQuery({
+    queryKey: ["public-branches"],
+    queryFn: () => api<{ _id: string; name: string; municipality?: string; province?: string }[]>("/public/branches"),
+  });
+
+  useEffect(() => {
+    if (!siteKey) return;
+    let active = true;
+    const script = document.querySelector<HTMLScriptElement>('script[data-turnstile]');
+    const element = script ?? document.createElement("script");
+    const render = () => {
+      if (!active || !captchaContainer.current || !window.turnstile) return;
+      widgetId.current = window.turnstile.render(captchaContainer.current, {
+        sitekey: siteKey,
+        action: "inquiry",
+        callback: (token) => { setTurnstileToken(token); setTurnstileError(""); },
+        "expired-callback": () => setTurnstileToken(""),
+        "error-callback": () => { setTurnstileToken(""); setTurnstileError("Security check failed to load. Please refresh and try again."); },
+      });
+    };
+    const onError = () => setTurnstileError("Security check failed to load. Please refresh and try again.");
+    if (window.turnstile) {
+      render();
+    } else {
+      element.addEventListener("load", render);
+      element.addEventListener("error", onError);
+      if (!script) {
+        element.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+        element.async = true;
+        element.defer = true;
+        element.dataset.turnstile = "true";
+        document.head.appendChild(element);
+      }
+    }
+    return () => {
+      active = false;
+      if (widgetId.current) window.turnstile?.remove(widgetId.current);
+      element.removeEventListener("load", render);
+      element.removeEventListener("error", onError);
+    };
+  }, [siteKey]);
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); setErr(""); setBusy(true);
+    if (!turnstileToken) {
+      setErr("Please complete the security check before sending your inquiry.");
+      setBusy(false);
+      return;
+    }
     const form = e.currentTarget;
-    const f = Object.fromEntries(new FormData(form)) as Record<string, string>;
+    const formData = new FormData(form);
+    const f = Object.fromEntries(formData) as Record<string, string>;
+    f.turnstileToken = turnstileToken;
     if (!f.email?.trim() && !f.phone?.trim()) {
       setErr("Please provide an email address or phone number so our team can reach you.");
       form.querySelector<HTMLInputElement>('[name="email"]')?.focus();
@@ -21,10 +93,12 @@ export default function Contact() {
     }
     Object.keys(f).forEach((k) => f[k] === "" && delete f[k]);
     try {
-      setRef((await api<{ reference: string }>("/public/inquiries", { method: "POST", body: JSON.stringify(f) })).reference);
+      setRef((await api<{ reference: string }>("/public/inquiries", { method: "POST", body: JSON.stringify({ ...f, smsConsent: formData.has("smsConsent") }) })).reference);
     } catch (x) {
       setErr((x as Error).message);
     } finally {
+      if (widgetId.current) window.turnstile?.reset(widgetId.current);
+      setTurnstileToken("");
       setBusy(false);
     }
   }
@@ -32,7 +106,21 @@ export default function Contact() {
   if (ref) return <Reveal className="mx-auto max-w-3xl rounded-3xl border border-brand/10 bg-white p-6 shadow-sm sm:p-10">
     <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-xl text-emerald-800" aria-hidden>✓</span>
     <p role="status" className="mt-4 font-heading text-2xl font-bold text-navy sm:text-3xl">Thank you for reaching out.</p>
-    <p className="mt-3 leading-7 text-slate-600">Your message has been received. Your inquiry reference is <strong className="rounded bg-ivory px-2 py-1 font-mono text-navy">{ref}</strong>. Keep it private so you can check your inquiry status.</p>
+    <p className="mt-3 leading-7 text-slate-600">Your message has been received. Save this inquiry reference—you’ll need it to check your status:</p>
+    <div className="mt-3 flex flex-wrap items-center gap-3">
+      <strong className="rounded-lg bg-ivory px-3 py-2 font-mono text-lg text-navy">{ref}</strong>
+      <button type="button" onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(ref);
+          setCopyMessage("Reference copied. Save it somewhere private.");
+        } catch {
+          setCopyMessage("Copy failed. Please take a screenshot or write down the reference.");
+        }
+      }} className="rounded-full border border-brand/20 px-4 py-2 text-sm font-semibold text-navy transition hover:bg-brand/5">Copy reference</button>
+    </div>
+    <p role="status" aria-live="polite" className="mt-2 text-sm text-slate-600">
+      {copyMessage || "Please take a screenshot of this page or save the reference number somewhere safe. Keep it private."}
+    </p>
     <div className="mt-6 flex flex-wrap gap-3">
       <Link to="/track-inquiry" className="btn inline-flex items-center rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white hover:bg-navy">Track your inquiry</Link>
       <Link to="/branches" className="btn inline-flex items-center rounded-full border border-brand/20 px-6 py-3 text-sm font-semibold text-navy hover:bg-brand/5">View branches</Link>
@@ -60,6 +148,18 @@ export default function Contact() {
               <label className="block text-sm font-medium text-navy">Your name *
                 <input name="name" autoComplete="name" required minLength={2} maxLength={120} className={field} placeholder="Name" />
               </label>
+              <label className="block text-sm font-medium text-navy">Branch *
+                <select name="branch" required defaultValue="" className={field} disabled={branches.isLoading || branches.isError || !branches.data?.length}>
+                  <option value="" disabled>{branches.isLoading ? "Loading branches…" : branches.isError ? "Branches unavailable" : "Select a branch"}</option>
+                  {branches.data?.map((branch) => (
+                    <option key={branch._id} value={branch._id}>
+                      {branch.name}{[branch.municipality, branch.province].filter(Boolean).length ? ` — ${[branch.municipality, branch.province].filter(Boolean).join(", ")}` : ""}
+                    </option>
+                  ))}
+                </select>
+                {branches.isError && <span role="alert" className="mt-1 block text-xs text-red-700">Could not load branches. Please refresh the page before sending your inquiry.</span>}
+                {!branches.isLoading && !branches.isError && !branches.data?.length && <span role="alert" className="mt-1 block text-xs text-red-700">No branches are available right now. Please contact us by phone.</span>}
+              </label>
               <label className="block text-sm font-medium text-navy">Inquiry type
                 <select name="category" defaultValue="general" className={field}>
                   <option value="general">General question</option>
@@ -73,9 +173,13 @@ export default function Contact() {
                 <input name="email" type="email" autoComplete="email" maxLength={254} className={field} placeholder="you@example.com" />
               </label>
               <label className="block text-sm font-medium text-navy">Phone
-                <input name="phone" type="tel" autoComplete="tel" maxLength={30} className={field} placeholder="Your phone number" />
+                <input name="phone" type="tel" autoComplete="tel" maxLength={30} className={field} placeholder="09xx xxx xxxx or +639xx xxx xxxx" />
               </label>
             </div>
+            <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
+              <input name="smsConsent" type="checkbox" value="true" className="mt-1 h-4 w-4 shrink-0 accent-brand" />
+              <span>I agree to receive SMS updates about this inquiry at the phone number above. Philippine mobile numbers can use local or international format. Message and data rates may apply. Contact us through our website to withdraw consent.</span>
+            </label>
             <label className="block text-sm font-medium text-navy">Subject *
               <input name="subject" defaultValue={new URLSearchParams(location.search).get("subject") ?? ""} required minLength={3} maxLength={150} className={field} placeholder="How can we help?" />
             </label>
@@ -83,10 +187,17 @@ export default function Contact() {
               <textarea name="message" required minLength={10} maxLength={3000} rows={5} className={`${field} resize-y`} placeholder="Tell us a little about what you need." />
             </label>
             <input name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
+            <div>
+              {siteKey
+                ? <div ref={captchaContainer} aria-label="Security check" />
+                : <p role="alert" className="text-sm text-red-700">The security check is not configured. Please contact us by phone.</p>}
+              {turnstileError && <p role="alert" className="mt-2 text-sm text-red-700">{turnstileError}</p>}
+              <p className="mt-2 text-xs text-slate-500">Protected by Cloudflare Turnstile. See our <Link to="/privacy" className="underline underline-offset-2">privacy policy</Link>.</p>
+            </div>
             {err && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{err}</p>}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="max-w-sm text-xs leading-5 text-slate-500">Please don’t include passwords, payment card information, or other sensitive personal details.</p>
-              <button type="submit" disabled={busy} className="btn inline-flex shrink-0 items-center justify-center rounded-full bg-brand px-7 py-3 font-semibold text-white hover:bg-navy disabled:cursor-wait disabled:opacity-60">{busy ? "Sending inquiry…" : "Send inquiry"}</button>
+              <button type="submit" disabled={busy || !siteKey || !turnstileToken || !!turnstileError || branches.isLoading || branches.isError || !branches.data?.length} className="btn inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-brand px-7 py-3 font-semibold text-white hover:bg-navy disabled:cursor-wait disabled:opacity-60">{busy && <Spinner />}{busy ? "Sending inquiry…" : "Send inquiry"}</button>
             </div>
           </form>
         </Reveal>

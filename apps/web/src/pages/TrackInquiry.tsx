@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import Reveal from "../components/Reveal";
+import Spinner from "../components/Spinner";
 
 type InquiryStatus = "new" | "in_review" | "contacted" | "resolved" | "closed";
 type Inquiry = { reference: string; status: InquiryStatus; createdAt: string };
@@ -55,7 +56,7 @@ export default function TrackInquiry() {
             <input id="inquiry-reference" value={reference} onChange={(e) => setReference(e.target.value)} placeholder="CFH-XXXXXXXXXX" autoComplete="off" required maxLength={14} className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 uppercase" />
           </label>
           {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-          <button disabled={busy} className="rounded-full bg-brand px-6 py-3 font-medium text-white hover:bg-navy disabled:opacity-60">{busy ? "Checking…" : "Check status"}</button>
+          <button disabled={busy} className="inline-flex items-center gap-2 rounded-full bg-brand px-6 py-3 font-medium text-white hover:bg-navy disabled:opacity-60">{busy && <Spinner />}{busy ? "Checking…" : "Check status"}</button>
         </form>
         <p className="mt-5 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-500">Your reference number is printed in the confirmation after you submit an inquiry. Keep it private; anyone with the number can view its status.</p>
       </Reveal>
