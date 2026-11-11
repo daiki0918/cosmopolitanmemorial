@@ -11,7 +11,7 @@ import { IconPhone } from "./components/Icons";
 import { AdminBranches, AdminContent, AdminInquiries, AdminLayout, Dashboard } from "./admin/Admin";
 import { AdminAccount, AdminActivity, AdminUsers, RequirePerm } from "./admin/Team";
 
-const nav = [["/", "Home"], ["/about", "About"], ["/services", "Services"], ["/products", "Products"], ["/view-a-casket", "Caskets"], ["/branches", "Branches"], ["/faq", "FAQ"], ["/contact", "Contact"]];
+const nav = [["/", "Home"], ["/about", "About"], ["/services", "Services"], ["/products", "Products"], ["/branches", "Branches"], ["/faq", "FAQ"], ["/contact", "Contact"]];
 const Page = () => <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8 md:py-14"><Outlet /></div>;
 
 function ScrollToTop() {
@@ -125,7 +125,6 @@ function PublicLayout() {
             <li><Link to="/branches" className="footer-link">Nationwide branches</Link></li>
             <li><Link to="/services" className="footer-link">Funeral services</Link></li>
             <li><Link to="/products" className="footer-link">Products and packages</Link></li>
-            <li><Link to="/view-a-casket" className="footer-link">View a casket</Link></li>
             <li><Link to="/faq" className="footer-link">Frequently asked questions</Link></li>
             <li><Link to="/about" className="footer-link">Our affiliates</Link></li>
           </ul>
