@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -7,6 +7,9 @@ import { api } from "../lib/api";
 import Reveal from "../components/Reveal";
 import Skeleton from "../components/Skeleton";
 import { IconClock, IconPhone, IconPin } from "../components/Icons";
+import { useCookieConsent } from "../components/CookieConsent";
+
+const BranchMapPreview = lazy(() => import("../components/BranchMapPreview"));
 
 type Branch = {
   _id: string;
@@ -105,11 +108,13 @@ function MapFocus({ branch, enabled }: { branch?: Branch; enabled: boolean }) {
 }
 
 export default function Branches() {
+  const { functionalEnabled, openSettings } = useCookieConsent();
   const [q, setQ] = useState("");
   const [region, setRegion] = useState<RegionFilter>("All");
   const [selectedId, setSelectedId] = useState("");
   const [focusSelected, setFocusSelected] = useState(false);
-  const { data, isLoading, error } = useQuery({ queryKey: ["branches"], queryFn: () => api<Branch[]>("/public/branches") });
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const { data, isLoading, error } = useQuery({ queryKey: ["branches"], queryFn: () => api<Branch[]>("/public/branches"), staleTime: 5 * 60_000, retry: false });
   const branches = data ?? [];
   const filtered = useMemo(() => {
     const search = q.trim().toLowerCase();
@@ -199,7 +204,7 @@ export default function Branches() {
 
         <div role="region" aria-label="Map of branch locations" className="order-1 space-y-3 lg:order-2">
           <section className="branch-map-shell relative isolate z-0 h-[24rem] overflow-hidden rounded-3xl border border-brand/10 bg-slate-100 shadow-sm sm:h-[30rem] lg:h-[38rem]">
-            <MapContainer center={[12.2, 122.4]} zoom={5} scrollWheelZoom={false} className="absolute inset-0 h-full w-full">
+            {functionalEnabled ? <MapContainer center={[12.2, 122.4]} zoom={5} scrollWheelZoom={false} className="absolute inset-0 h-full w-full">
               <MapFocus branch={selected} enabled={focusSelected} />
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
@@ -224,10 +229,14 @@ export default function Branches() {
                   </Marker>
                 );
               })}
-            </MapContainer>
-            {selected && maps ? <>
-              <a href={maps.search} target="_blank" rel="noreferrer" className="absolute right-4 top-4 z-[400] rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-sm font-semibold text-navy shadow-md backdrop-blur transition hover:bg-white">Open map ↗</a>
-              <Reveal key={`detail-${selected._id}`} className="absolute inset-x-3 bottom-3 z-[400] hidden rounded-2xl border border-white/70 bg-white/95 p-4 shadow-xl backdrop-blur-md sm:inset-x-5 sm:bottom-5 sm:p-6 lg:block">
+            </MapContainer> : <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
+              <IconPin className="h-10 w-10 text-brand" />
+              <p className="max-w-sm text-sm leading-6 text-slate-600">The interactive map loads from OpenStreetMap when Functional cookies are enabled. Branch names and contact details remain available without it.</p>
+              <button type="button" onClick={openSettings} className="rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy">Cookie Settings</button>
+            </div>}
+            {functionalEnabled && selected && maps ? <>
+              <a href={maps.search} target="_blank" rel="noreferrer" className="absolute right-4 top-4 z-[400] rounded-full border border-white/60 bg-white/75 px-4 py-2 text-sm font-semibold text-navy shadow-md backdrop-blur-xl transition hover:bg-white/90">Open map ↗</a>
+              <Reveal key={`detail-${selected._id}`} className="absolute inset-x-3 bottom-3 z-[400] hidden rounded-2xl border border-white/45 bg-gradient-to-br from-white/35 via-white/20 to-white/10 p-4 shadow-[0_16px_50px_rgba(15,23,42,0.16)] ring-1 ring-white/20 backdrop-blur-sm backdrop-saturate-150 sm:inset-x-5 sm:bottom-5 sm:p-6 lg:block">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                   {photoFor(selected) && <img src={photoFor(selected)} alt="" className="hidden h-20 w-24 shrink-0 rounded-xl object-cover sm:block" />}
                   <div className="min-w-0 flex-1">
@@ -239,7 +248,7 @@ export default function Branches() {
                       {!selected.phone && !selected.hours && <span>Call or message us for current hours and contact details.</span>}
                     </div>
                     <div className="mt-4 flex flex-wrap gap-3">
-                      <a href={maps.directions} target="_blank" rel="noreferrer" className="btn inline-flex items-center justify-center rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy">Get directions</a>
+                      <button type="button" onClick={() => setPreviewOpen(true)} className="btn inline-flex items-center justify-center rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy">Get directions</button>
                       {selectedPhoneLinks.length === 1 && <a href={selectedPhoneLinks[0].href} className="btn inline-flex items-center justify-center rounded-full border border-brand/20 px-5 py-2.5 text-sm font-semibold text-navy hover:bg-brand/5">Call branch</a>}
                     </div>
                   </div>
@@ -250,15 +259,17 @@ export default function Branches() {
               <p className="text-sm text-slate-600">{isLoading ? "Loading branch locations…" : "No locations match this search."}</p>
             </div>}
           </section>
-          {selected && maps && <Reveal key={`mobile-detail-${selected._id}`} className="rounded-2xl border border-brand/10 bg-white p-4 shadow-sm lg:hidden">
+          {functionalEnabled && selected && maps && <Reveal key={`mobile-detail-${selected._id}`} className="rounded-2xl border border-brand/10 bg-white p-4 shadow-sm lg:hidden">
             <h2 className="font-heading text-lg font-bold text-navy">{selected.name}</h2>
             <p className="mt-1 flex items-start gap-2 text-sm leading-6 text-slate-600"><IconPin className="mt-1 h-4 w-4 shrink-0 text-brand" />{[selected.address, selected.municipality, selected.province].filter(Boolean).join(", ") || "Address not published"}</p>
             {selected.pinAccuracy === "approximate" && <p className="mt-2 text-xs leading-5 text-amber-800">Approximate area pin — please confirm the exact address before travelling.</p>}
             {selectedPhoneLinks.length > 0 && <p className="mt-2 flex flex-wrap items-center gap-2 text-sm">{selectedPhoneLinks.map(({ number, href }, index) => <span key={href}>{index > 0 && <span className="text-slate-400"> / </span>}<a href={href} className="font-medium text-brand hover:underline">{number}</a></span>)}</p>}
-            <a href={maps.directions} target="_blank" rel="noreferrer" className="btn mt-3 inline-flex items-center justify-center rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy">Get directions</a>
+            <button type="button" onClick={() => setPreviewOpen(true)} className="btn mt-3 inline-flex items-center justify-center rounded-full bg-brand px-5 py-2.5 text-sm font-semibold text-white hover:bg-navy">Get directions</button>
           </Reveal>}
         </div>
       </div>
+
+      {previewOpen && selected && maps && <Suspense fallback={<div role="status" className="fixed inset-0 z-[1000] grid place-items-center bg-slate-950/70 text-sm font-medium text-white">Loading map preview…</div>}><BranchMapPreview branch={selected} directionsUrl={maps.directions} onClose={() => setPreviewOpen(false)} /></Suspense>}
 
       <Reveal className="rounded-2xl border border-brand/10 bg-white p-5 shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-6">
         <div>

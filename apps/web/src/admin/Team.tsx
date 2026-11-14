@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, apiAll } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { can, ROLE_INFO, type Perm, type Role } from "./permissions";
-import { Badge, Confirm, Empty, Err, Icon, Loading, Modal, PageHeader, Pager, Spinner, btnGhost, btnPrimary, card, input, labelCls, useToast } from "./ui";
+import { Badge, Confirm, Drawer, Empty, Err, Icon, Loading, PageHeader, Pager, Spinner, btnGhost, btnPrimary, card, input, labelCls, useToast } from "./ui";
 
 const when = (d?: string) => (d ? new Date(d).toLocaleString() : "");
 const CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
@@ -151,7 +151,7 @@ export function AdminUsers() {
       </div>
 
       {modal === "new" && (
-        <Modal title="Add team member" onClose={() => setModal(null)}>
+        <Drawer title="Add team member" onClose={() => setModal(null)}>
           <form onSubmit={submitNew} className="space-y-4">
             <label className={labelCls}>Full name<input name="name" required className={input} /></label>
             <label className={labelCls}>Email<input name="email" type="email" required className={input} /></label>
@@ -162,10 +162,10 @@ export function AdminUsers() {
             <Err msg={err} />
             <button disabled={create.isPending} className={btnPrimary}>{create.isPending && <Spinner />}{create.isPending ? "Creating account…" : "Create account"}</button>
           </form>
-        </Modal>
+        </Drawer>
       )}
       {editModal && (
-        <Modal title={`Edit ${editModal.name ?? "team member"}`} onClose={() => setEditModal(null)} maxW="max-w-2xl">
+        <Drawer title={`Edit ${editModal.name ?? "team member"}`} onClose={() => setEditModal(null)} maxW="max-w-2xl">
           <form onSubmit={submitEdit} className="space-y-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className={labelCls}>Full name
@@ -207,16 +207,16 @@ export function AdminUsers() {
               <button disabled={patch.isPending || branchesQuery.isLoading || branchesQuery.isError} className={btnPrimary}>{patch.isPending && <Spinner />}{patch.isPending ? "Saving changes…" : "Save changes"}</button>
             </div>
           </form>
-        </Modal>
+        </Drawer>
       )}
       {modal && modal !== "new" && (
-        <Modal title={`Reset password for ${modal.name ?? modal.email}`} onClose={() => setModal(null)}>
+        <Drawer title={`Reset password for ${modal.name ?? modal.email}`} onClose={() => setModal(null)}>
           <form onSubmit={(e) => { e.preventDefault(); patch.mutate({ id: modal._id, b: { password: pw } }); }} className="space-y-4">
             <PasswordField value={pw} onChange={setPw} label="New temporary password" />
             <Err msg={err} />
             <button disabled={patch.isPending} className={btnPrimary}>{patch.isPending && <Spinner />}{patch.isPending ? "Setting password…" : "Set password"}</button>
           </form>
-        </Modal>
+        </Drawer>
       )}
       {ask && <Confirm title={ask.title} message={ask.message} onCancel={() => setAsk(null)} onConfirm={() => { ask.run(); setAsk(null); }} />}
     </section>

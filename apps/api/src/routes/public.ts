@@ -1,9 +1,10 @@
 import { Router } from "express";
-import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { Branch, Inquiry } from "../models/index.js";
 import { env } from "../config/env.js";
+import { GUARDRAILS } from "../config/guardrails.js";
 import { normalizePhone } from "../lib/phone.js";
+import { inquiryRateLimit } from "../middleware/rate-limit.js";
 
 const r = Router();
 const pub = { status: "active", verified: true };
@@ -24,10 +25,10 @@ r.get("/branches/:slug", async (req, res) => {
 });
 
 const body = z.object({
-  name: z.string().min(2).max(120), email: z.string().email().optional(),
-  phone: z.string().max(30).optional().transform(normalizePhone),
+  name: z.string().min(2).max(GUARDRAILS.inquiry.nameMaxCharacters), email: z.string().max(GUARDRAILS.inquiry.emailMaxCharacters).email().optional(),
+  phone: z.string().max(GUARDRAILS.inquiry.phoneMaxCharacters).optional().transform(normalizePhone),
   smsConsent: z.boolean().default(false),
-  subject: z.string().min(3).max(150), message: z.string().min(10).max(3000),
+  subject: z.string().min(3).max(GUARDRAILS.inquiry.subjectMaxCharacters), message: z.string().min(10).max(GUARDRAILS.inquiry.messageMaxCharacters),
   category: z.enum(["services", "packages", "payments", "branches", "general"]).default("general"),
   branch: z.string().regex(/^[a-f\d]{24}$/i),
   turnstileToken: z.string().min(1).max(2048),
@@ -39,7 +40,7 @@ const body = z.object({
     }
   });
 
-r.post("/inquiries", rateLimit({ windowMs: 3600_000, limit: 5 }), async (req, res) => {
+r.post("/inquiries", inquiryRateLimit, async (req, res) => {
   if (!env.TURNSTILE_SECRET_KEY) return void res.status(503).json({ error: "The inquiry form is temporarily unavailable. Please contact us by phone." });
   const { website, turnstileToken, ...d } = body.parse(req.body);
   const controller = new AbortController();
@@ -72,7 +73,7 @@ r.post("/inquiries", rateLimit({ windowMs: 3600_000, limit: 5 }), async (req, re
   });
   res.status(201).json({ reference: i.reference });
 });
-r.get("/requests/:reference", rateLimit({ windowMs: 60_000, limit: 20 }), async (req, res) => {
+r.get("/requests/:reference", async (req, res) => {
   const i = await Inquiry.findOne({ reference: String(req.params.reference) }).select("reference status createdAt");
   i ? res.json(i) : res.status(404).json({ error: "Not found" });
 });

@@ -59,3 +59,12 @@ export const AuditLog = model("AuditLog", auditSchema);
 
 export const audit_ = (actor: unknown, action: string, target?: string, meta?: object) =>
   AuditLog.create({ actor: typeof actor === "object" && actor ? (actor as any).id : actor, action, target, meta });
+
+const rateLimitBucket = new Schema({
+  key: { type: String, required: true, unique: true },
+  count: { type: Number, required: true },
+  expiresAt: { type: Date, required: true },
+}, { versionKey: false });
+
+rateLimitBucket.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+export const RateLimitBucket = model("RateLimitBucket", rateLimitBucket);

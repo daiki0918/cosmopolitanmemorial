@@ -1,4 +1,5 @@
 import { env } from "../config/env.js";
+import { consumePaidApiCall, PaidApiLimitError } from "../middleware/rate-limit.js";
 
 const statusTitles: Record<string, string> = {
   new: "Inquiry received",
@@ -27,6 +28,7 @@ export async function sendInquiryStatusSms(inquiry: { phone: string; reference: 
     throw new Error("TextBee SMS is not configured");
   const title = statusTitles[inquiry.status];
   if (!title) throw new Error("Unsupported inquiry status");
+  if (!await consumePaidApiCall()) throw new PaidApiLimitError();
   const trackingUrl = `${(env.PUBLIC_WEB_URL || env.WEB_ORIGIN).replace(/\/+$/, "")}/track-inquiry`;
   const message = [
     "COSMOPOLITAN FUNERAL HOMES",

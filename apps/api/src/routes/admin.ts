@@ -6,6 +6,7 @@ import { requireAuth, can, branchScope } from "../middleware/auth.js";
 import { ROLE_PERMISSIONS, ROLES } from "../config/permissions.js";
 import { sendInquiryStatusEmail } from "../lib/email.js";
 import { isSmsConfigured, sendInquiryStatusSms } from "../lib/sms.js";
+import { PaidApiLimitError } from "../middleware/rate-limit.js";
 
 const r = Router();
 r.use(requireAuth);
@@ -101,12 +102,23 @@ r.get("/dashboard", async (req, res) => {
   const permissions = ROLE_PERMISSIONS[req.user!.role];
   const canReadBranches = permissions.includes("branches:read");
   const canReadInquiries = permissions.includes("inquiries:read");
-  const [branches, newInquiries, byStatus] = await Promise.all([
+  const canManageUsers = permissions.includes("users:manage");
+  const since = new Date();
+  since.setUTCDate(since.getUTCDate() - 13);
+  since.setUTCHours(0, 0, 0, 0);
+  const [branches, totalBranches, newInquiries, byStatus, users, inquiryActivity] = await Promise.all([
     canReadBranches ? Branch.countDocuments({ status: "active", ...branchScope(req.user!, "_id") }) : null,
+    canReadBranches ? Branch.countDocuments(branchScope(req.user!, "_id")) : null,
     canReadInquiries ? Inquiry.countDocuments({ ...f, status: "new" }) : null,
     canReadInquiries ? Inquiry.aggregate([{ $match: f }, { $group: { _id: "$status", count: { $sum: 1 } } }]) : [],
+    canManageUsers ? User.countDocuments() : null,
+    canReadInquiries ? Inquiry.aggregate([
+      { $match: { ...f, createdAt: { $gte: since } } },
+      { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt", timezone: "UTC" } }, count: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]) : [],
   ]);
-  res.json({ branches, newInquiries, byStatus });
+  res.json({ branches, totalBranches, newInquiries, byStatus, users, inquiryActivity });
 });
 r.get("/branches", can("branches:read"), async (req, res) => {
   const { p, n } = page(req.query);
@@ -127,6 +139,16 @@ r.patch("/branches/:id", can("branches:write"), async (req, res) => {
   await audit_(req.user!.id, "branch.update", b.id, { name: b.name, code: b.code });
   res.json(b);
 });
+r.delete("/branches/:id", can("branches:write"), async (req, res) => {
+  const b = await Branch.findOneAndUpdate(
+    { _id: req.params.id, ...branchScope(req.user!, "_id"), status: { $ne: "archived" } },
+    { status: "archived", updatedBy: req.user!.id },
+    { new: true },
+  );
+  if (!b) return void res.status(404).json({ error: "Branch not found or already archived" });
+  await audit_(req.user!.id, "branch.archive", b.id, { name: b.name, code: b.code });
+  res.status(204).end();
+});
 r.get("/inquiries", can("inquiries:read"), async (req, res) => {
   const { p, n } = page(req.query);
   const f: any = branchScope(req.user!);
@@ -146,8 +168,8 @@ r.patch("/inquiries/:id/status", can("inquiries:write"), async (req, res) => {
   const i = await Inquiry.findOneAndUpdate({ _id: req.params.id, ...branchScope(req.user!) },
     { status, $push: { timeline: { action: `status:${status}`, by: req.user!.id } } }, { new: true });
   if (!i) return void res.status(404).json({ error: "Not found" });
-  let emailNotification: "sent" | "failed" | "not_available" = "not_available";
-  let smsNotification: "queued" | "failed" | "invalid_credentials" | "device_not_found" | "network_error" | "timeout" | "not_configured" | "not_opted_in" = "not_opted_in";
+  let emailNotification: "sent" | "failed" | "not_available" | "daily_limit_reached" = "not_available";
+  let smsNotification: "queued" | "failed" | "invalid_credentials" | "device_not_found" | "network_error" | "timeout" | "not_configured" | "not_opted_in" | "daily_limit_reached" = "not_opted_in";
   if (i.email) {
     const branch = i.branch ? await Branch.findById(i.branch).select("name").lean() : null;
     try {
@@ -161,20 +183,22 @@ r.patch("/inquiries/:id/status", can("inquiries:write"), async (req, res) => {
       });
       emailNotification = "sent";
     } catch (error) {
-      emailNotification = "failed";
-      const mailError = error && typeof error === "object"
-        ? error as { code?: unknown; responseCode?: unknown; command?: unknown; message?: unknown }
-        : {};
-      const message = String(mailError.message ?? error ?? "Unknown mail error")
-        .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[email]")
-        .replace(/\b[A-Za-z0-9+/=_-]{12,}\b/g, "[redacted]")
-        .slice(0, 300);
-      console.error("Could not send inquiry status notification.", {
-        code: mailError.code ?? "MAIL_ERROR",
-        responseCode: mailError.responseCode,
-        command: mailError.command,
-        message,
-      });
+      emailNotification = error instanceof PaidApiLimitError ? "daily_limit_reached" : "failed";
+      if (!(error instanceof PaidApiLimitError)) {
+        const mailError = error && typeof error === "object"
+          ? error as { code?: unknown; responseCode?: unknown; command?: unknown; message?: unknown }
+          : {};
+        const message = String(mailError.message ?? error ?? "Unknown mail error")
+          .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[email]")
+          .replace(/\b[A-Za-z0-9+/=_-]{12,}\b/g, "[redacted]")
+          .slice(0, 300);
+        console.error("Could not send inquiry status notification.", {
+          code: mailError.code ?? "MAIL_ERROR",
+          responseCode: mailError.responseCode,
+          command: mailError.command,
+          message,
+        });
+      }
     }
   }
   if (i.phone && i.smsConsent && !isSmsConfigured()) {
@@ -187,16 +211,19 @@ r.patch("/inquiries/:id/status", can("inquiries:write"), async (req, res) => {
       const smsError = error && typeof error === "object"
         ? error as { code?: unknown; responseCode?: unknown; networkCode?: unknown }
         : {};
-      smsNotification = smsError.responseCode === 401 ? "invalid_credentials"
+      smsNotification = error instanceof PaidApiLimitError ? "daily_limit_reached"
+        : smsError.responseCode === 401 ? "invalid_credentials"
         : smsError.code === "TEXTBEE_DEVICE_NOT_FOUND" ? "device_not_found"
         : smsError.code === "TEXTBEE_TIMEOUT" ? "timeout"
         : smsError.code === "TEXTBEE_NETWORK_ERROR" ? "network_error"
         : "failed";
-      console.error("Could not send inquiry status SMS.", {
-        code: smsError.code ?? "TEXTBEE_ERROR",
-        responseCode: smsError.responseCode,
-        networkCode: smsError.networkCode,
-      });
+      if (!(error instanceof PaidApiLimitError)) {
+        console.error("Could not send inquiry status SMS.", {
+          code: smsError.code ?? "TEXTBEE_ERROR",
+          responseCode: smsError.responseCode,
+          networkCode: smsError.networkCode,
+        });
+      }
     }
   }
   await audit_(req.user!.id, "inquiry.status", i.id, {

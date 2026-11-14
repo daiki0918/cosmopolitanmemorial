@@ -15,6 +15,7 @@ const icons = {
   plus: <path d="M12 5v14M5 12h14" />,
   close: <path d="M6 6l12 12M18 6 6 18" />,
   search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></>,
+  bell: <><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></>,
   edit: <><path d="M4 20h4L19 9l-4-4L4 16v4z" /><path d="m13.5 6.5 4 4" /></>,
   trash: <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />,
   download: <path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16" />,
@@ -145,6 +146,25 @@ export function Modal({ title, onClose, children, maxW = "max-w-xl" }: { title: 
         </div>
         {children}
       </div>
+    </div>
+  );
+}
+export function Drawer({ title, onClose, children, maxW = "max-w-xl" }: { title: string; onClose: () => void; children: ReactNode; maxW?: string }) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [onClose]);
+  return (
+    <div className="admin-drawer-backdrop fixed inset-0 z-50 flex justify-end bg-slate-900/50" onMouseDown={onClose}>
+      <section role="dialog" aria-modal="true" aria-label={title} onMouseDown={(e) => e.stopPropagation()}
+        className={`admin-drawer-panel flex h-full w-full ${maxW} flex-col overflow-y-auto bg-white shadow-2xl`}>
+        <header className="sticky top-0 z-10 flex min-h-16 shrink-0 items-center justify-between border-b border-slate-100 bg-white px-5 py-3 sm:px-7">
+          <h2 className="font-heading text-lg font-bold text-navy">{title}</h2>
+          <button type="button" className={iconBtn} onClick={onClose} aria-label="Close"><Icon name="close" className="h-4 w-4" /></button>
+        </header>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">{children}</div>
+      </section>
     </div>
   );
 }

@@ -14,4 +14,12 @@ audit log, branches CRUD, inquiry intake with reference numbers + rate limit + h
 dashboard (real aggregates), public branch search, contact form, Vercel SPA config.
 Not yet built: services/products/packages, bookings, personnel, inventory/assets, reports, FAQ/CMS, uploads, email,
 MapLibre map, admin UI, password reset, policy pages, tests, OpenAPI docs.
+
+## Rate limits and cost guardrails
+`apps/api/src/config/guardrails.ts` is the shared source of limits for the API and web chat/contact UI. API requests
+are limited to 20 per IP per hour, inquiries to 5 per IP per day, chat to 10 messages per chat / 5 per minute with
+a 3-second cooldown, and configured email/SMS provider calls share a 1,000-call UTC-day budget. MongoDB stores
+hashed-IP counters with TTL expiry so limits apply across API instances. Set `TRUST_PROXY_HOPS` to the exact number
+of trusted ingress proxies; do not expose the API directly with a proxy-hop value that trusts client-supplied headers.
+The current chat uses static articles and cached local replies; it does not call a paid AI service.
 Tests have not been written or run.

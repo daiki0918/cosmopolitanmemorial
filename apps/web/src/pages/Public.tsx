@@ -219,8 +219,8 @@ export const Privacy = () => (<section className="mx-auto max-w-4xl space-y-8 pb
     </Reveal>
     <Reveal delay={100} className="rounded-2xl border border-brand/10 bg-white p-6 shadow-sm">
       <h2 className="font-heading text-xl font-bold text-navy">Cookies and sign-in</h2>
-      <p className="mt-3 leading-7 text-slate-600">Public pages do not require an account. When staff sign in, the site uses a necessary authentication cookie to maintain the session; it is marked HttpOnly and SameSite Strict, is limited to authentication routes, and expires after seven days. In production it is also marked Secure. The current website code does not configure advertising or analytics cookies.</p>
-      <p className="mt-3 leading-7 text-slate-600">If cookies are disabled, staff sign-in and session renewal may not work. Cookie practices should be reviewed again if analytics, embedded services or other third-party tools are added.</p>
+      <p className="mt-3 leading-7 text-slate-600">Public pages do not require an account. When staff sign in, the site uses a necessary, host-only authentication cookie to maintain the session. It is HttpOnly, SameSite Strict, limited to authentication routes, and expires within seven days; Secure is enabled in production. Cookie choices are stored in this browser's origin-scoped local storage, not in an additional cookie.</p>
+      <p className="mt-3 leading-7 text-slate-600">The interactive OpenStreetMap map and Cloudflare Turnstile security check load only when Functional consent is enabled. Analytics and marketing providers are not currently configured. Read the <Link to="/cookies" className="font-medium text-brand underline underline-offset-2">Cookie Policy</Link> or change your choices using Cookie Settings in the footer.</p>
     </Reveal>
     <Reveal delay={150} className="rounded-2xl border border-brand/10 bg-white p-6 shadow-sm">
       <h2 className="font-heading text-xl font-bold text-navy">Storage and protection</h2>
@@ -242,5 +242,43 @@ export const Privacy = () => (<section className="mx-auto max-w-4xl space-y-8 pb
     <Link to="/contact?subject=Privacy%20request" className="btn mt-5 inline-flex items-center rounded-full bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-navy">Contact us about privacy</Link>
   </Reveal>
 
-  <p className="px-1 text-xs leading-5 text-slate-500">This description reflects the website implementation reviewed on October 28, 2026. It should be checked whenever the site, cookie use, or information-handling practices change.</p>
+  <p className="px-1 text-xs leading-5 text-slate-500">This description reflects the website implementation as of November 12, 2026. It should be checked whenever the site, cookie use, or information-handling practices change.</p>
+</section>);
+
+export const CookiePolicy = () => (<section className="mx-auto max-w-4xl space-y-8 pb-10">
+  <Reveal className="rounded-3xl bg-gradient-to-br from-navy to-brand px-6 py-9 text-white sm:px-10 sm:py-12">
+    <p className="text-xs font-semibold uppercase tracking-[.2em] text-white/65">Your choices</p>
+    <h1 className="mt-3 font-heading text-3xl font-bold sm:text-4xl">Cookie policy</h1>
+    <p className="mt-3 max-w-2xl leading-7 text-white/80">How this website uses cookies and similar browser storage, and how to change your preferences.</p>
+  </Reveal>
+
+  <Reveal className="rounded-2xl border border-amber-300/60 bg-amber-50 p-5 text-sm leading-6 text-amber-950 sm:p-6">
+    <p className="font-semibold">Policy draft — company review required</p>
+    <p className="mt-1">This is an implementation summary, not legal advice or a determination of compliance. The company should confirm its privacy notice, lawful bases, retention periods, data controller details, service providers, and privacy contact before publication.</p>
+  </Reveal>
+
+  <div className="grid gap-4 sm:grid-cols-2">
+    <Reveal className="rounded-2xl border border-brand/10 bg-white p-6 shadow-sm">
+      <h2 className="font-heading text-xl font-bold text-navy">Necessary</h2>
+      <p className="mt-3 leading-7 text-slate-600">Always active. Staff authentication uses a host-only refresh cookie named <code>rt</code>, set by the API with HttpOnly and SameSite Strict attributes, a seven-day maximum age, and a path limited to authentication routes. Secure is enabled in production and omitted for local HTTP development; no Domain attribute is set, so the browser scopes it to the API host. The site also stores your consent choice in local storage for this website origin. Localhost and the production origin therefore keep separate choices.</p>
+    </Reveal>
+    <Reveal delay={70} className="rounded-2xl border border-brand/10 bg-white p-6 shadow-sm">
+      <h2 className="font-heading text-xl font-bold text-navy">Functional</h2>
+      <p className="mt-3 leading-7 text-slate-600">Optional. If enabled, the site loads OpenStreetMap tiles for the interactive branch map and Cloudflare Turnstile for the inquiry security check. These providers may receive technical information such as your IP address when those features load. Without consent, branch details remain available, the map is replaced with a settings prompt, and the inquiry form's Turnstile check is not loaded.</p>
+    </Reveal>
+    <Reveal delay={100} className="rounded-2xl border border-brand/10 bg-white p-6 shadow-sm">
+      <h2 className="font-heading text-xl font-bold text-navy">Analytics</h2>
+      <p className="mt-3 leading-7 text-slate-600">Optional. No analytics provider or analytics cookies are currently configured on this website. Analytics remains off unless you choose otherwise; enabling the preference does not load a provider that is not installed.</p>
+    </Reveal>
+    <Reveal delay={150} className="rounded-2xl border border-brand/10 bg-white p-6 shadow-sm">
+      <h2 className="font-heading text-xl font-bold text-navy">Marketing</h2>
+      <p className="mt-3 leading-7 text-slate-600">Optional. No marketing or advertising provider or related cookies are currently configured. Marketing remains off unless you choose otherwise; enabling the preference does not load a provider that is not installed.</p>
+    </Reveal>
+  </div>
+
+  <Reveal className="rounded-2xl border border-brand/10 bg-white p-6 shadow-sm sm:p-8">
+    <h2 className="font-heading text-xl font-bold text-navy">Managing consent and your privacy rights</h2>
+    <p className="mt-3 leading-7 text-slate-600">On your first visit, optional categories are off. You may accept all, reject optional categories, or choose them individually. Use Cookie Settings in the footer at any time to change or withdraw optional consent; the preference is saved in browser local storage and applies to this origin. Clearing browser storage also clears your saved choice. Withdrawal stops future loading of consent-gated features; it cannot undo data already sent to a provider while consent was active.</p>
+    <p className="mt-3 leading-7 text-slate-600">The consent control is designed to provide an informed, optional choice. The Data Privacy Act of 2012 (Republic Act No. 10173), its implementing rules, and National Privacy Commission guidance may apply to personal data processed through this site. Cookie consent does not replace any other notice, lawful basis, security, retention, or data-subject-rights obligations. For information about inquiries and privacy requests, see the <Link to="/privacy" className="font-medium text-brand underline underline-offset-2">Privacy Policy</Link>.</p>
+  </Reveal>
 </section>);

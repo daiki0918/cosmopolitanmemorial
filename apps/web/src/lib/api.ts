@@ -1,4 +1,8 @@
 const BASE = import.meta.env.DEV ? "/api/v1" : import.meta.env.VITE_API_URL ?? "/api/v1";
+export function apiAssetUrl(path: string) {
+  const url = new URL(`${BASE.replace(/\/$/, "")}${path}`, window.location.origin);
+  return url.origin === window.location.origin ? `${url.pathname}${url.search}` : url.toString();
+}
 let token = "";
 let refreshRequest: Promise<boolean> | undefined;
 export const setToken = (t: string) => { token = t; };
@@ -29,7 +33,18 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (res.status === 401 && token) {
     if (await refreshSession()) res = await go();
   }
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? "Request failed");
+  if (!res.ok) {
+    let message = `Request failed (${res.status})`;
+    try {
+      const body: unknown = await res.json();
+      if (body && typeof body === "object" && "error" in body && typeof body.error === "string") {
+        message = body.error;
+      }
+    } catch (error) {
+      console.error("Could not read the API error response.", error);
+    }
+    throw new Error(message);
+  }
   return res.status === 204 ? (undefined as T) : res.json();
 }
 

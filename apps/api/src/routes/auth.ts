@@ -6,14 +6,14 @@ import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { env } from "../config/env.js";
 import { ADMIN_ACCESS_AUDIENCE, ADMIN_REFRESH_AUDIENCE, JWT_ISSUER, SESSION_MAX_AGE_SECONDS } from "../config/auth.js";
+import { GUARDRAILS } from "../config/guardrails.js";
 import { User, audit_ } from "../models/index.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const r = Router();
-const MAX_FAILS = 5;
-const LOCK_MS = 15 * 60_000;
 const SESSION_MS = SESSION_MAX_AGE_SECONDS * 1000;
 const WEB = new URL(env.WEB_ORIGIN).origin;
+// No Domain attribute keeps this host-only; Secure is enabled only for production HTTPS.
 const cookie = { httpOnly: true, secure: env.NODE_ENV === "production", sameSite: "strict" as const, path: "/api/v1/auth", maxAge: SESSION_MS };
 const { maxAge: _maxAge, ...clearCookieOptions } = cookie;
 
@@ -38,9 +38,9 @@ const csrfGuard = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
-const ipLimiter = rateLimit({ windowMs: 15 * 60_000, limit: 20, standardHeaders: true, legacyHeaders: false });
+const ipLimiter = rateLimit({ windowMs: GUARDRAILS.auth.loginWindowMs, limit: GUARDRAILS.auth.loginIpLimit, standardHeaders: true, legacyHeaders: false });
 const emailLimiter = rateLimit({
-  windowMs: 15 * 60_000, limit: 10, standardHeaders: true, legacyHeaders: false,
+  windowMs: GUARDRAILS.auth.loginWindowMs, limit: GUARDRAILS.auth.loginEmailLimit, standardHeaders: true, legacyHeaders: false,
   keyGenerator: (req) => "email:" + String(req.body?.email ?? "").toLowerCase().slice(0, 254),
 });
 
@@ -59,8 +59,8 @@ r.post("/login", csrfGuard, ipLimiter, emailLimiter, async (req, res) => {
   if (!ok || !u) {
     if (u && !locked && !valid) {
       const upd = await User.findByIdAndUpdate(u._id, { $inc: { failedLogins: 1 } }, { new: true });
-      if (upd && upd.failedLogins >= MAX_FAILS)
-        await User.updateOne({ _id: u._id }, { $set: { failedLogins: 0, lockUntil: new Date(Date.now() + LOCK_MS) } });
+      if (upd && upd.failedLogins >= GUARDRAILS.auth.maxFailedLogins)
+        await User.updateOne({ _id: u._id }, { $set: { failedLogins: 0, lockUntil: new Date(Date.now() + GUARDRAILS.auth.failedLoginLockMs) } });
     }
     return void res.status(401).json({ error: "Invalid credentials" });
   }

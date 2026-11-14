@@ -2,6 +2,7 @@ import { z } from "zod";
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().default(4000),
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(1),
   WEB_ORIGIN: z.string().url(),
   PUBLIC_WEB_URL: z.string().url().optional().or(z.literal("")),
   MONGODB_URI: z.string().min(1),

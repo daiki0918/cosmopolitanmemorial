@@ -5,6 +5,8 @@ import { api } from "../lib/api";
 import Reveal from "../components/Reveal";
 import Spinner from "../components/Spinner";
 import { IconPhone, IconPin, IconShield } from "../components/Icons";
+import { useCookieConsent } from "../components/CookieConsent";
+import { GUARDRAILS } from "../../../api/src/config/guardrails";
 
 declare global {
   interface Window {
@@ -23,10 +25,12 @@ declare global {
 }
 
 export default function Contact() {
+  const { functionalEnabled, openSettings } = useCookieConsent();
   const [ref, setRef] = useState("");
   const [err, setErr] = useState("");
   const [copyMessage, setCopyMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileError, setTurnstileError] = useState("");
   const captchaContainer = useRef<HTMLDivElement>(null);
@@ -35,10 +39,16 @@ export default function Contact() {
   const branches = useQuery({
     queryKey: ["public-branches"],
     queryFn: () => api<{ _id: string; name: string; municipality?: string; province?: string }[]>("/public/branches"),
+    staleTime: 5 * 60_000,
+    retry: false,
   });
 
   useEffect(() => {
-    if (!siteKey) return;
+    if (!siteKey || !functionalEnabled) {
+      setTurnstileToken("");
+      setTurnstileError("");
+      return;
+    }
     let active = true;
     const script = document.querySelector<HTMLScriptElement>('script[data-turnstile]');
     const element = script ?? document.createElement("script");
@@ -72,22 +82,39 @@ export default function Contact() {
       element.removeEventListener("load", render);
       element.removeEventListener("error", onError);
     };
-  }, [siteKey]);
+  }, [siteKey, functionalEnabled]);
 
   async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault(); setErr(""); setBusy(true);
-    if (!turnstileToken) {
-      setErr("Please complete the security check before sending your inquiry.");
-      setBusy(false);
-      return;
-    }
+    e.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
+    setErr(""); setBusy(true);
     const form = e.currentTarget;
     const formData = new FormData(form);
     const f = Object.fromEntries(formData) as Record<string, string>;
+    if (f.website?.trim()) {
+      setErr("We could not verify this inquiry. Please review the form and try again.");
+      submitting.current = false; setBusy(false);
+      return;
+    }
+    const spamText = `${f.subject ?? ""} ${f.message ?? ""}`;
+    const links = spamText.match(/(?:https?:\/\/|www\.)\S+/gi) ?? [];
+    if (links.length > GUARDRAILS.inquiry.maxLinks || new RegExp(`(.)\\1{${GUARDRAILS.inquiry.repeatedCharacterThreshold},}`).test(f.message ?? "")) {
+      setErr("Please remove repeated text or excessive links and try again.");
+      submitting.current = false; setBusy(false);
+      return;
+    }
+    if (!turnstileToken) {
+      setErr("Please complete the security check before sending your inquiry.");
+      submitting.current = false;
+      setBusy(false);
+      return;
+    }
     f.turnstileToken = turnstileToken;
     if (!f.email?.trim() && !f.phone?.trim()) {
       setErr("Please provide an email address or phone number so our team can reach you.");
       form.querySelector<HTMLInputElement>('[name="email"]')?.focus();
+      submitting.current = false;
       setBusy(false);
       return;
     }
@@ -99,6 +126,7 @@ export default function Contact() {
     } finally {
       if (widgetId.current) window.turnstile?.reset(widgetId.current);
       setTurnstileToken("");
+      submitting.current = false;
       setBusy(false);
     }
   }
@@ -146,7 +174,7 @@ export default function Contact() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm font-medium text-navy">Your name *
-                <input name="name" autoComplete="name" required minLength={2} maxLength={120} className={field} placeholder="Name" />
+                <input name="name" autoComplete="name" required minLength={2} maxLength={GUARDRAILS.inquiry.nameMaxCharacters} className={field} placeholder="Name" />
               </label>
               <label className="block text-sm font-medium text-navy">Branch *
                 <select name="branch" required defaultValue="" className={field} disabled={branches.isLoading || branches.isError || !branches.data?.length}>
@@ -170,10 +198,10 @@ export default function Contact() {
                 </select>
               </label>
               <label className="block text-sm font-medium text-navy">Email
-                <input name="email" type="email" autoComplete="email" maxLength={254} className={field} placeholder="you@example.com" />
+                <input name="email" type="email" autoComplete="email" maxLength={GUARDRAILS.inquiry.emailMaxCharacters} className={field} placeholder="you@example.com" />
               </label>
               <label className="block text-sm font-medium text-navy">Phone
-                <input name="phone" type="tel" autoComplete="tel" maxLength={30} className={field} placeholder="09xx xxx xxxx or +639xx xxx xxxx" />
+                <input name="phone" type="tel" autoComplete="tel" maxLength={GUARDRAILS.inquiry.phoneMaxCharacters} className={field} placeholder="09xx xxx xxxx or +639xx xxx xxxx" />
               </label>
             </div>
             <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
@@ -181,23 +209,28 @@ export default function Contact() {
               <span>I agree to receive SMS updates about this inquiry at the phone number above. Philippine mobile numbers can use local or international format. Message and data rates may apply. Contact us through our website to withdraw consent.</span>
             </label>
             <label className="block text-sm font-medium text-navy">Subject *
-              <input name="subject" defaultValue={new URLSearchParams(location.search).get("subject") ?? ""} required minLength={3} maxLength={150} className={field} placeholder="How can we help?" />
+              <input name="subject" defaultValue={new URLSearchParams(location.search).get("subject") ?? ""} required minLength={3} maxLength={GUARDRAILS.inquiry.subjectMaxCharacters} className={field} placeholder="How can we help?" />
             </label>
             <label className="block text-sm font-medium text-navy">Message *
-              <textarea name="message" required minLength={10} maxLength={3000} rows={5} className={`${field} resize-y`} placeholder="Tell us a little about what you need." />
+              <textarea name="message" required minLength={10} maxLength={GUARDRAILS.inquiry.messageMaxCharacters} rows={5} className={`${field} resize-y`} placeholder="Tell us a little about what you need." />
             </label>
             <input name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
             <div>
               {siteKey
-                ? <div ref={captchaContainer} aria-label="Security check" />
+                ? functionalEnabled
+                  ? <div ref={captchaContainer} aria-label="Security check" />
+                  : <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600">
+                    The security check loads from Cloudflare after you enable Functional cookies.{" "}
+                    <button type="button" onClick={openSettings} className="font-semibold text-brand underline underline-offset-2">Cookie Settings</button>
+                  </div>
                 : <p role="alert" className="text-sm text-red-700">The security check is not configured. Please contact us by phone.</p>}
               {turnstileError && <p role="alert" className="mt-2 text-sm text-red-700">{turnstileError}</p>}
-              <p className="mt-2 text-xs text-slate-500">Protected by Cloudflare Turnstile. See our <Link to="/privacy" className="underline underline-offset-2">privacy policy</Link>.</p>
+              {functionalEnabled && <p className="mt-2 text-xs text-slate-500">Protected by Cloudflare Turnstile. See our <Link to="/privacy" className="underline underline-offset-2">privacy policy</Link>.</p>}
             </div>
             {err && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{err}</p>}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="max-w-sm text-xs leading-5 text-slate-500">Please don’t include passwords, payment card information, or other sensitive personal details.</p>
-              <button type="submit" disabled={busy || !siteKey || !turnstileToken || !!turnstileError || branches.isLoading || branches.isError || !branches.data?.length} className="btn inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-brand px-7 py-3 font-semibold text-white hover:bg-navy disabled:cursor-wait disabled:opacity-60">{busy && <Spinner />}{busy ? "Sending inquiry…" : "Send inquiry"}</button>
+              <button type="submit" disabled={busy || !siteKey || !functionalEnabled || !turnstileToken || !!turnstileError || branches.isLoading || branches.isError || !branches.data?.length} className="btn inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-brand px-7 py-3 font-semibold text-white hover:bg-navy disabled:cursor-wait disabled:opacity-60">{busy && <Spinner />}{busy ? "Sending inquiry…" : "Send inquiry"}</button>
             </div>
           </form>
         </Reveal>

@@ -4,10 +4,12 @@ import react from "@vitejs/plugin-react";
 import tailwind from "@tailwindcss/vite";
 
 export default defineConfig(({ mode }) => {
-  const rootEnv = loadEnv(mode, fileURLToPath(new URL("../..", import.meta.url)), "VITE_TURNSTILE_SITE_KEY");
+  const rootEnv = loadEnv(mode, fileURLToPath(new URL("../..", import.meta.url)), "VITE_");
   return {
     define: {
       "import.meta.env.VITE_TURNSTILE_SITE_KEY": JSON.stringify(rootEnv.VITE_TURNSTILE_SITE_KEY ?? ""),
+      "import.meta.env.VITE_MAP_STYLE_URL": JSON.stringify(rootEnv.VITE_MAP_STYLE_URL ?? ""),
+      "import.meta.env.VITE_MAPILLARY_ACCESS_TOKEN": JSON.stringify(rootEnv.VITE_MAPILLARY_ACCESS_TOKEN ?? ""),
     },
     plugins: [react(), tailwind()],
     server: {

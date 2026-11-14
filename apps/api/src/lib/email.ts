@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
+import { consumePaidApiCall, PaidApiLimitError } from "../middleware/rate-limit.js";
 
 const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => ({
   "&": "&amp;",
@@ -35,6 +36,7 @@ export async function sendInquiryStatusEmail(inquiry: {
   if (!transport || !env.GMAIL_USER) throw new Error("Gmail SMTP is not configured");
   const detail = statusDetails[inquiry.status];
   if (!detail) throw new Error("Unsupported inquiry status");
+  if (!await consumePaidApiCall()) throw new PaidApiLimitError();
   const name = escapeHtml(inquiry.name);
   const reference = escapeHtml(inquiry.reference);
   const subject = escapeHtml(inquiry.subject);

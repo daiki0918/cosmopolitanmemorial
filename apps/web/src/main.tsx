@@ -6,4 +6,4 @@ import App from "./App";
 import { AuthProvider } from "./lib/auth";
 import "./index.css";
 createRoot(document.getElementById("root")!).render(
-  <React.StrictMode><QueryClientProvider client={new QueryClient()}><BrowserRouter><AuthProvider><App /></AuthProvider></BrowserRouter></QueryClientProvider></React.StrictMode>);
+  <React.StrictMode><QueryClientProvider client={new QueryClient()}><BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}><AuthProvider><App /></AuthProvider></BrowserRouter></QueryClientProvider></React.StrictMode>);

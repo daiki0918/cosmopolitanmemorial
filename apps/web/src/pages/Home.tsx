@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import type { CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import Reveal from "../components/Reveal";
 import { IconClock, IconFlower, IconHeart, IconPhone, IconPin, IconShield } from "../components/Icons";
 import { api } from "../lib/api";
+const BranchMapPreview = lazy(() => import("../components/BranchMapPreview"));
 type Icon = (p: { className?: string }) => JSX.Element;
 const btn = "btn inline-flex items-center rounded-full px-7 py-3 font-medium shadow-sm";
 type Branch = {
@@ -48,11 +49,15 @@ function NearbyBranch() {
   const [position, setPosition] = useState<Position | null>(null);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
-  const { data: branches, isLoading, error } = useQuery({ queryKey: ["branches"], queryFn: () => api<Branch[]>("/public/branches") });
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const { data: branches, isLoading, error } = useQuery({ queryKey: ["branches"], queryFn: () => api<Branch[]>("/public/branches"), staleTime: 5 * 60_000, retry: false });
   const nearest = position && branches?.reduce<{ branch: Branch; distance: number } | null>((closest, branch) => {
     const distance = distanceToBranch(position, branch);
     return distance !== undefined && (!closest || distance < closest.distance) ? { branch, distance } : closest;
   }, null);
+  const directionsBranch = nearest?.branch.location?.coordinates
+    ? { ...nearest.branch, location: { coordinates: nearest.branch.location.coordinates } }
+    : null;
 
   function findNearest() {
     if (!navigator.geolocation) {
@@ -102,12 +107,21 @@ function NearbyBranch() {
             {locating && <span aria-hidden className="spinner" />}
             {locating ? "Finding nearby branch…" : position ? "Update my location" : "Use my location"}
           </button>
-          {nearest && (
-            <a href={`https://www.openstreetmap.org/directions?to=${nearest.branch.location?.coordinates?.[1]}%2C${nearest.branch.location?.coordinates?.[0]}`} target="_blank" rel="noreferrer" className="btn result-in inline-flex items-center justify-center rounded-full border border-brand/20 px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brand/5">Get directions</a>
+          {directionsBranch && (
+            <button type="button" onClick={() => setPreviewOpen(true)} className="btn result-in inline-flex items-center justify-center rounded-full border border-brand/20 px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brand/5">Get directions</button>
           )}
           <Link to="/branches" className="btn inline-flex items-center justify-center rounded-full border border-brand/20 px-4 py-2.5 text-sm font-semibold text-navy hover:bg-brand/5">All branches</Link>
         </div>
       </div>
+      {previewOpen && directionsBranch && (
+        <Suspense fallback={<div role="status" className="fixed inset-0 z-[1000] grid place-items-center bg-slate-950/70 text-sm font-medium text-white">Loading map preview…</div>}>
+          <BranchMapPreview
+            branch={directionsBranch}
+            directionsUrl={`https://www.openstreetmap.org/directions?to=${directionsBranch.location.coordinates[1]}%2C${directionsBranch.location.coordinates[0]}`}
+            onClose={() => setPreviewOpen(false)}
+          />
+        </Suspense>
+      )}
     </section>
   );
 }
@@ -133,30 +147,14 @@ export default function Home() {
       <img
         src="/home_logo.png"
         alt="Cosmopolitan Funeral Parlour building"
-        fetchPriority="high"
+        {...{ fetchpriority: "high" }}
         decoding="async"
         className="home-hero-building hero-zoom absolute inset-0 h-full w-full object-cover object-[65%_center]"
       />
       <span aria-hidden className="home-hero-glow home-hero-glow-one" />
       <span aria-hidden className="home-hero-glow home-hero-glow-two" />
 
-      <Reveal delay={500} className="absolute right-6 top-28 z-10 hidden lg:right-10 lg:block">
-        <Link
-          to="/branches"
-          className="group flex items-center gap-4 rounded-2xl border border-white/25 bg-white/10 p-3 pr-5 shadow-2xl backdrop-blur-md transition hover:bg-white/20"
-        >
-          <span className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/15">
-            <IconPin className="h-6 w-6" />
-          </span>
-          <span>
-            <span className="block text-sm font-semibold">Find a branch</span>
-            <span className="block text-xs text-white/80">Contact details and directions</span>
-          </span>
-          <span aria-hidden className="ml-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/30 transition group-hover:translate-x-1 group-hover:bg-white group-hover:text-[#050b24]">→</span>
-        </Link>
-      </Reveal>
-
-      <div className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-32 pt-20 sm:px-8">
+      <div className="home-hero-content relative z-10 mx-auto w-full max-w-6xl px-5 pb-32 pt-20 sm:px-8">
         <div className="home-hero-copy max-w-2xl">
           <Reveal>
             <p className="home-hero-eyebrow">Compassion <span aria-hidden>·</span> Dignity <span aria-hidden>·</span> Care</p>
@@ -176,12 +174,15 @@ export default function Home() {
           </Reveal>
 
           <Reveal delay={900}>
-            <div className="mt-9 flex flex-wrap items-center gap-5">
-              <Link to="/services" className={`${btn} btn-arrow home-hero-button-primary`}>
+            <div className="home-hero-actions mt-9 flex flex-wrap items-center gap-3 sm:gap-5">
+              <Link to="/services" className={`${btn} btn-arrow home-hero-button-primary home-hero-action-primary`}>
                 View services <span aria-hidden className="arrow ml-3">→</span>
               </Link>
-              <a href="tel:09178038524" className="home-hero-button-glass group inline-flex items-center gap-3 rounded-full px-3 py-2">
-                <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/30 bg-white/10 backdrop-blur transition group-hover:bg-white/25">
+              <Link to="/branches" className="home-hero-button-glass home-hero-action-branch inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold">
+                <span className="home-hero-action-icon"><IconPin className="h-4 w-4" /></span> Find a branch
+              </Link>
+              <a href="tel:09178038524" className="home-hero-button-glass home-hero-action-call group inline-flex items-center gap-3 rounded-full px-3 py-2">
+                <span className="home-hero-action-icon h-10 w-10">
                   <IconPhone className="h-5 w-5" />
                 </span>
                 <span className="text-left text-sm leading-tight">
